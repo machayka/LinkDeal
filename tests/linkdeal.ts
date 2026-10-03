@@ -24,7 +24,23 @@ describe("linkdeal", () => {
     { description: "Deployment", percent: 40 },
   ];
 
-  const now = () => Math.floor(Date.now() / 1000);
+  // Czas blockchaina (sysvar Clock), a nie komputera — lokalny Surfpool ma własny zegar.
+  const now = async () => {
+    const clock = await connection.getAccountInfo(anchor.web3.SYSVAR_CLOCK_PUBKEY);
+    return Number(clock!.data.readBigInt64LE(32)); // pole unix_timestamp
+  };
+
+  // Przesuwa zegar lokalnego blockchaina o `seconds` do przodu (funkcja tylko Surfpoola).
+  // Dzięki temu testy deadline'ów nie muszą czekać.
+  async function timeTravel(seconds: number) {
+    const absoluteTimestamp = ((await now()) + seconds) * 1000; // w milisekundach
+    await fetch(connection.rpcEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "surfnet_timeTravel", params: [{ absoluteTimestamp }] }),
+    });
+  }
+
   const balance = (key: PublicKey) => connection.getBalance(key);
 
   // Adres umowy = PDA z seedów ["escrow", wykonawca, nonce]. Ten adres trafia do linku.
@@ -38,8 +54,9 @@ describe("linkdeal", () => {
   let nextNonce = 1;
   async function createEscrow(tasks = TASKS, offerIn = 60, deadlineIn = 120) {
     const nonce = new BN(nextNonce++);
+    const t = await now();
     await program.methods
-      .createEscrow(nonce, new BN(AMOUNT), tasks, new BN(now() + deadlineIn), new BN(now() + offerIn))
+      .createEscrow(nonce, new BN(AMOUNT), tasks, new BN(t + deadlineIn), new BN(t + offerIn))
       .accounts({ freelancer: freelancer.publicKey })
       .signers([freelancer])
       .rpc();
@@ -54,6 +71,16 @@ describe("linkdeal", () => {
       .approveMilestone()
       .accounts({ client: signer.publicKey, freelancer: freelancer.publicKey, escrow })
       .signers([signer])
+      .rpc();
+
+  // cancel i refund może wywołać każdy — w testach podpisuje (płaci opłatę) domyślny portfel.
+  const cancel = (escrow: PublicKey) =>
+    program.methods.cancel().accounts({ freelancer: freelancer.publicKey, escrow }).rpc();
+
+  const refund = (escrow: PublicKey) =>
+    program.methods
+      .refundAfterDeadline()
+      .accounts({ client: client.publicKey, freelancer: freelancer.publicKey, escrow })
       .rpc();
 
   // Oczekuje, że transakcja się nie uda z danym błędem programu.
@@ -126,5 +153,46 @@ describe("linkdeal", () => {
     const pda = await createEscrow();
     await fund(pda);
     await expectError(approve(pda, stranger), "NotClient");
+  });
+
+  it("cancel is rejected while the offer is still valid", async () => {
+    const pda = await createEscrow();
+    await expectError(cancel(pda), "OfferStillValid");
+  });
+
+  it("cancel closes an unfunded contract after the offer expires", async () => {
+    const pda = await createEscrow(TASKS, 2, 4); // oferta ważna 2 s
+    const rent = await balance(pda);
+    const start = await balance(freelancer.publicKey);
+
+    await timeTravel(3);
+    await cancel(pda);
+
+    assert.equal((await balance(freelancer.publicKey)) - start, rent);
+    assert.isNull(await connection.getAccountInfo(pda));
+  });
+
+  it("refund_after_deadline is rejected before the deadline", async () => {
+    const pda = await createEscrow();
+    await fund(pda);
+    await expectError(refund(pda), "DeadlineNotPassed");
+  });
+
+  // Przykład z dokumentacji: Task 1 zaliczony, reszta wraca do zleceniodawcy po deadlinie.
+  it("refund_after_deadline returns the unpaid rest to the client", async () => {
+    const pda = await createEscrow(TASKS, 2, 4); // deadline za 4 s
+    await fund(pda);
+    await approve(pda); // Task 1: 30%
+    const rent = (await balance(pda)) - AMOUNT * 0.7;
+    const clientStart = await balance(client.publicKey);
+    const freelancerStart = await balance(freelancer.publicKey);
+
+    await timeTravel(5);
+    await expectError(approve(pda), "DeadlinePassed"); // po deadlinie nie da się już zaliczyć
+    await refund(pda);
+
+    assert.equal((await balance(client.publicKey)) - clientStart, AMOUNT * 0.7);
+    assert.equal((await balance(freelancer.publicKey)) - freelancerStart, rent);
+    assert.isNull(await connection.getAccountInfo(pda));
   });
 });

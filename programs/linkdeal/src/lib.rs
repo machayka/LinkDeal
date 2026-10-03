@@ -86,6 +86,36 @@ pub mod linkdeal {
         ctx.accounts.escrow.approved += 1;
         Ok(())
     }
+
+    // Nikt nie wpłacił, a oferta wygasła → zamykamy konto, rent wraca do wykonawcy.
+    // Może wywołać każdy. Zamknięcie robi Anchor (`close = freelancer` w Cancel).
+    pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
+        let escrow = &ctx.accounts.escrow;
+        require!(escrow.client.is_none(), LinkDealError::AlreadyFunded);
+        require!(
+            Clock::get()?.unix_timestamp >= escrow.offer_expires_at,
+            LinkDealError::OfferStillValid
+        );
+        Ok(())
+    }
+
+    // Deadline minął → niewypłacona reszta wraca do zleceniodawcy, rent do wykonawcy.
+    // Może wywołać każdy. Zamknięcie robi Anchor (`close = freelancer` w RefundAfterDeadline).
+    pub fn refund_after_deadline(ctx: Context<RefundAfterDeadline>) -> Result<()> {
+        require!(
+            Clock::get()?.unix_timestamp >= ctx.accounts.escrow.deadline,
+            LinkDealError::DeadlineNotPassed
+        );
+
+        // Reszta = wszystko na koncie poza rentem (rent jest potrzebny, by konto istniało).
+        let escrow_info = ctx.accounts.escrow.to_account_info();
+        let rent = Rent::get()?.minimum_balance(escrow_info.data_len());
+        let rest = escrow_info.lamports() - rent;
+
+        ctx.accounts.escrow.sub_lamports(rest)?;
+        ctx.accounts.client.add_lamports(rest)?;
+        Ok(())
+    }
 }
 
 // Kwota za jeden task. u128, żeby mnożenie nie przepełniło u64.
@@ -165,6 +195,33 @@ pub struct ApproveMilestone<'info> {
     pub escrow: Account<'info, Escrow>,
 }
 
+#[derive(Accounts)]
+pub struct Cancel<'info> {
+    #[account(mut)] // dostaje rent
+    pub freelancer: SystemAccount<'info>,
+
+    // close = freelancer: po udanej instrukcji Anchor zamyka konto i oddaje lamporty wykonawcy.
+    #[account(mut, has_one = freelancer, close = freelancer)]
+    pub escrow: Account<'info, Escrow>,
+}
+
+#[derive(Accounts)]
+pub struct RefundAfterDeadline<'info> {
+    #[account(mut)] // dostaje resztę kwoty
+    pub client: SystemAccount<'info>,
+
+    #[account(mut)] // dostaje rent
+    pub freelancer: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        has_one = freelancer,
+        constraint = escrow.client == Some(client.key()) @ LinkDealError::NotClient,
+        close = freelancer
+    )]
+    pub escrow: Account<'info, Escrow>,
+}
+
 // Dane umowy zapisane na blockchainie.
 #[account]
 #[derive(InitSpace)]
@@ -208,6 +265,10 @@ pub enum LinkDealError {
     DeadlinePassed,
     #[msg("Only the client who funded the contract can do this")]
     NotClient,
+    #[msg("Offer is still valid")]
+    OfferStillValid,
+    #[msg("Deadline has not passed yet")]
+    DeadlineNotPassed,
 }
 
 #[cfg(test)]
