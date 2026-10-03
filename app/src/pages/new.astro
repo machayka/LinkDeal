@@ -1,0 +1,171 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Nowa umowa">
+  <h1 class="mb-4 text-2xl font-bold">Nowa umowa</h1>
+
+  <form id="form" class="card bg-base-100 shadow">
+    <div class="card-body gap-4">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Kwota zlecenia (SOL)</legend>
+        <input name="amount" type="number" min="0.001" step="0.001" required class="input w-full" />
+      </fieldset>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Oferta ważna do</legend>
+          <input name="offerExpiresAt" type="datetime-local" required class="input w-full" />
+        </fieldset>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend">Deadline zlecenia</legend>
+          <input name="deadline" type="datetime-local" required class="input w-full" />
+        </fieldset>
+      </div>
+
+      <div>
+        <div class="mb-2 flex items-center justify-between">
+          <span class="font-semibold">Taski</span>
+          <span id="sum" class="badge"></span>
+        </div>
+        <div id="tasks" class="flex flex-col gap-2"></div>
+        <button type="button" id="add-task" class="btn btn-ghost btn-sm mt-2">+ Dodaj task</button>
+      </div>
+
+      <div id="error" class="alert alert-error hidden"></div>
+      <button id="submit" class="btn btn-primary">Utwórz umowę</button>
+    </div>
+  </form>
+
+  <!-- Po utworzeniu umowy: link do wysłania zleceniodawcy -->
+  <div id="result" class="card bg-base-100 hidden shadow">
+    <div class="card-body">
+      <h2 class="card-title">Umowa utworzona ✓</h2>
+      <p>Wyślij ten link zleceniodawcy:</p>
+      <div class="join w-full">
+        <input id="link" readonly class="input join-item w-full font-mono text-sm" />
+        <button id="copy" class="btn join-item">Kopiuj</button>
+      </div>
+      <a id="tx" target="_blank" class="link text-sm">Transakcja w Solana Explorer</a>
+    </div>
+  </div>
+
+  <template id="task-row">
+    <div class="flex gap-2">
+      <input name="description" placeholder="Opis taska" maxlength="100" class="input flex-1" />
+      <input name="percent" type="number" min="5" max="100" placeholder="%" class="input w-20" />
+      <button type="button" class="btn btn-ghost btn-square" title="Usuń">✕</button>
+    </div>
+  </template>
+</Layout>
+
+<script>
+  import { BN } from "@anchor-lang/core";
+  import { escrowPda, explorerTx, getProgram, randomNonce } from "../lib/program";
+  import { onWalletChange, type AnchorWallet } from "../lib/wallet";
+
+  const MAX_TASKS = 10;
+  const form = document.querySelector<HTMLFormElement>("#form")!;
+  const tasks = document.querySelector<HTMLElement>("#tasks")!;
+  const sumBadge = document.querySelector<HTMLElement>("#sum")!;
+  const addTask = document.querySelector<HTMLButtonElement>("#add-task")!;
+  const submit = document.querySelector<HTMLButtonElement>("#submit")!;
+  const error = document.querySelector<HTMLElement>("#error")!;
+  const rowTemplate = document.querySelector<HTMLTemplateElement>("#task-row")!;
+
+  let wallet: AnchorWallet | null = null;
+
+  function addTaskRow(description = "", percent = "") {
+    const row = rowTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
+    row.querySelector<HTMLInputElement>("[name=description]")!.value = description;
+    row.querySelector<HTMLInputElement>("[name=percent]")!.value = percent;
+    row.querySelector("button")!.onclick = () => {
+      row.remove();
+      update();
+    };
+    tasks.append(row);
+    update();
+  }
+
+  function readTasks() {
+    return [...tasks.children].map((row) => ({
+      description: row.querySelector<HTMLInputElement>("[name=description]")!.value.trim(),
+      percent: Number(row.querySelector<HTMLInputElement>("[name=percent]")!.value),
+    }));
+  }
+
+  // Te same reguły co w programie — tu tylko po to, żeby od razu pokazać błąd.
+  function validate(): string | null {
+    const data = new FormData(form);
+    const list = readTasks();
+    const sum = list.reduce((total, task) => total + task.percent, 0);
+    const offer = new Date(String(data.get("offerExpiresAt"))).getTime();
+    const deadline = new Date(String(data.get("deadline"))).getTime();
+
+    if (!(Number(data.get("amount")) > 0)) return "Podaj kwotę zlecenia.";
+    if (!(offer > Date.now())) return "Oferta musi być ważna w przyszłości.";
+    if (!(deadline >= offer)) return "Deadline nie może być wcześniej niż koniec ważności oferty.";
+    if (list.length < 1 || list.length > MAX_TASKS) return "Umowa musi mieć od 1 do 10 tasków.";
+    if (list.some((task) => !task.description)) return "Każdy task musi mieć opis.";
+    if (list.some((task) => new TextEncoder().encode(task.description).length > 100))
+      return "Opis taska może mieć maksymalnie 100 bajtów (polskie litery liczą się podwójnie).";
+    if (list.some((task) => task.percent < 5)) return "Każdy task musi mieć co najmniej 5%.";
+    if (sum !== 100) return `Suma procentów musi wynosić 100 (teraz ${sum}).`;
+    return null;
+  }
+
+  // Odświeża licznik sumy i stan przycisku po każdej zmianie w formularzu.
+  function update() {
+    const sum = readTasks().reduce((total, task) => total + task.percent, 0);
+    sumBadge.textContent = `Suma: ${sum}%`;
+    sumBadge.className = `badge ${sum === 100 ? "badge-success" : "badge-error"}`;
+    addTask.disabled = tasks.children.length >= MAX_TASKS;
+
+    const problem = wallet ? validate() : "Połącz portfel, aby utworzyć umowę.";
+    submit.disabled = problem !== null;
+    submit.textContent = problem ?? "Utwórz umowę";
+  }
+
+  form.oninput = update;
+  addTask.onclick = () => addTaskRow();
+  onWalletChange((w) => {
+    wallet = w;
+    update();
+  });
+
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    if (!wallet || validate()) return;
+    const data = new FormData(form);
+    const toUnix = (field: string) => new BN(Math.floor(new Date(String(data.get(field))).getTime() / 1000));
+    const lamports = new BN(Math.round(Number(data.get("amount")) * 1e9)); // 1 SOL = 10^9 lamportów
+    const nonce = randomNonce();
+
+    submit.disabled = true;
+    submit.innerHTML = `<span class="loading loading-spinner"></span> Podpisz w portfelu…`;
+    error.classList.add("hidden");
+    try {
+      const signature = await getProgram(wallet)
+        .methods.createEscrow(nonce, lamports, readTasks(), toUnix("deadline"), toUnix("offerExpiresAt"))
+        .accounts({ freelancer: wallet.publicKey })
+        .rpc();
+
+      const pda = escrowPda(wallet.publicKey, nonce).toBase58();
+      document.querySelector<HTMLInputElement>("#link")!.value = `${location.origin}/contract/${pda}`;
+      document.querySelector<HTMLAnchorElement>("#tx")!.href = explorerTx(signature);
+      form.classList.add("hidden");
+      document.querySelector("#result")!.classList.remove("hidden");
+    } catch (e) {
+      error.textContent = e instanceof Error ? e.message : String(e);
+      error.classList.remove("hidden");
+      update();
+    }
+  };
+
+  document.querySelector<HTMLButtonElement>("#copy")!.onclick = (event) => {
+    navigator.clipboard.writeText(document.querySelector<HTMLInputElement>("#link")!.value);
+    (event.currentTarget as HTMLButtonElement).textContent = "Skopiowano ✓";
+  };
+
+  addTaskRow("", "100"); // na start jeden task na całość
+</script>
