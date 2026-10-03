@@ -36,6 +36,14 @@ Przykład: zlecenie 3k, 3 taski po 1k, deadline 1 miesiąc. Task 1 zostaje zalic
 
 Na Solanie nic nie dzieje się samo. Anulowanie i zwrot uruchamia się przyciskiem, który może kliknąć każdy, ale pieniądze trafiają zawsze tylko do stron umowy.
 
+## Backend służy tylko do ogłoszeń
+
+Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile wypłacić, deadline i zwrot. Backend obsługuje wyłącznie tablicę ogłoszeń, która nie ma związku z blockchainem.
+
+- Backend nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji.
+- Frontend czyta umowę prosto z blockchaina, a transakcje podpisuje portfel użytkownika.
+- Nawet jeśli serwer przestanie działać, każdą umowę da się dokończyć bezpośrednio przez program, np. z innego frontu albo z CLI.
+
 ## Odpowiedzi na pytania jury
 
 - **Gdzie znika pośrednik?** Rolę pośrednika pełni program on-chain. Trzyma pieniądze i wypłaca je według reguł zapisanych w kodzie.
