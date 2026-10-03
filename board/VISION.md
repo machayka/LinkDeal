@@ -6,7 +6,7 @@ Zasada nadrzędna: **ogłoszenia nie dotykają pieniędzy ani umów.** Escrow dz
 
 ## Przepływ
 
-1. **Zleceniodawca** dodaje ogłoszenie: tytuł, opis, budżet, termin i kontakt (Telegram albo Discord). Podpisuje się portfelem, bez zakładania konta.
+1. **Zleceniodawca** dodaje ogłoszenie: tytuł, opis, budżet i termin. Podpisuje się portfelem, bez zakładania konta.
 2. **Wykonawca** przegląda listę, otwiera ogłoszenie i klika **„Napisz”**, co otwiera czat ze zleceniodawcą (TODO, patrz niżej).
 3. Strony ustalają kwotę, taski i deadline na czacie.
 4. Wykonawca klika **„Utwórz umowę”**. Otwiera się linkdeal.fun/new z wypełnionym budżetem i terminem, a dalej działa zwykły flow escrow.
