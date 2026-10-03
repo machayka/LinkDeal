@@ -1,39 +1,33 @@
 # ogloszenia.linkdeal.fun: wizja
 
-Tablica ogłoszeń od zleceniodawców. Wykonawca znajduje tu zlecenie, a warunki ustala ze zleceniodawcą na Telegramie albo Discordzie. Potem tworzy umowę na linkdeal.fun.
+Tablica ogłoszeń od zleceniodawców. Wykonawca znajduje tu zlecenie, a warunki ustala ze zleceniodawcą na czacie. Potem tworzy umowę na linkdeal.fun.
 
 Zasada nadrzędna: **ogłoszenia nie dotykają pieniędzy ani umów.** Escrow działa wyłącznie on-chain, a tablica to zwykły serwis z bazą. Zero funkcji, które da się zastąpić gotowym narzędziem.
 
 ## Przepływ
 
 1. **Zleceniodawca** dodaje ogłoszenie: tytuł, opis, budżet, termin i kontakt (Telegram albo Discord). Podpisuje się portfelem, bez zakładania konta.
-2. **Wykonawca** przegląda listę, otwiera ogłoszenie i klika **„Napisz”**. Otwiera się komunikator wybrany przez zleceniodawcę.
-3. Strony ustalają kwotę, taski i deadline w tym komunikatorze. Tam też wykonawca oddaje pracę, z plikami.
+2. **Wykonawca** przegląda listę, otwiera ogłoszenie i klika **„Napisz”**, co otwiera czat ze zleceniodawcą (TODO, patrz niżej).
+3. Strony ustalają kwotę, taski i deadline na czacie.
 4. Wykonawca klika **„Utwórz umowę”**. Otwiera się linkdeal.fun/new z wypełnionym budżetem i terminem, a dalej działa zwykły flow escrow.
 5. Zleceniodawca zamyka ogłoszenie, gdy znalazł wykonawcę.
 
-## Kontakt: przycisk „Napisz” zamiast własnego czatu
+## Kontakt: czat — TODO
 
-Zleceniodawca wybiera komunikator i podaje swój nick. „Napisz” prowadzi tam bezpośrednio.
+**Decyzja:** czat będzie, ale wyłącznie tutaj, na ogloszenia.linkdeal.fun. System scentralizowany (ogłoszenia i czat) jest oddzielony od zdecentralizowanego (escrow on-chain na linkdeal.fun).
 
-| Wybór | Co podaje zleceniodawca | Co robi „Napisz” |
-|---|---|---|
-| **Telegram** | nick, np. `jan_kowalski` | otwiera `https://t.me/jan_kowalski`, czyli od razu rozmowę |
-| **Discord** | nazwę użytkownika, np. `jan.kowalski` | kopiuje nick do schowka i otwiera Discorda. Discord nie ma linku do rozmowy po samym nicku, więc trzeba go wkleić w wyszukiwarkę znajomych |
+Wymagania:
+- Autoryzacja przez portfel (Phantom i inne przez Wallet Standard), czyli podpis wiadomości zamiast konta i hasła.
+- Najlepiej gotowe rozwiązanie, a nie własny czat.
 
-### Dlaczego nie czat w aplikacji
+Do wyboru później. Kandydaci sprawdzeni w październiku 2026:
 
-Stan sprawdzony w październiku 2026:
-
-| Opcja | Dlaczego nie |
+| Opcja | Uwagi |
 |---|---|
-| Dialect | nie oferuje już czatu, tylko Blinks, Alerts i Markets |
+| TalkJS (gotowy widget) | działa od razu, ma pliki. Darmowy tylko w trybie deweloperskim, a produkcja kosztuje od $279 miesięcznie. Tożsamość z portfela wymaga podpisu po stronie naszego backendu |
+| Solchat (Web3) | SDK dla portfeli Solany. Młody projekt z własnym tokenem, wiadomości on-chain |
 | XMTP | nie obsługuje jeszcze portfeli Solany |
-| Solchat (Web3, on-chain) | młody projekt z własnym tokenem. Wiadomości są on-chain, więc płatne i publiczne. UI trzeba zbudować samemu |
-| TalkJS (gotowy widget) | darmowy tylko w trybie deweloperskim, a produkcja kosztuje od $279 miesięcznie. Do tożsamości przez portfel potrzebny jest backend. Rozmowy leżą u dostawcy |
-| Własny czat | dużo pracy: wiadomości, powiadomienia, moderacja, spam |
-
-Telegram i Discord ludzie już mają i oba obsługują pliki. Nie przechowujemy cudzych rozmów, więc nie stajemy się pośrednikiem. Do czatu w aplikacji, najpewniej TalkJS, można wrócić po hackathonie.
+| Dialect | nie oferuje już czatu, tylko Blinks, Alerts i Markets |
 
 ## Logowanie: tylko podpis portfelem
 
@@ -51,8 +45,6 @@ Telegram i Discord ludzie już mają i oba obsługują pliki. Nie przechowujemy 
 | `description` | opis zlecenia |
 | `budget_sol` | budżet orientacyjny w SOL |
 | `due_date` | oczekiwany termin |
-| `contact_type` | `telegram` / `discord` |
-| `contact_handle` | nick w wybranym komunikatorze |
 | `status` | `open` / `closed` |
 | `created_at` | data dodania |
 
@@ -61,8 +53,8 @@ Na start bez kategorii, tagów, zdjęć, ocen i ulubionych.
 ## Ekrany
 
 1. **Lista** (`/`): karty ogłoszeń z tytułem, budżetem, terminem i datą, najnowsze na górze.
-2. **Ogłoszenie** (`/o/<id>`): opis i dwa przyciski, „Napisz” i „Utwórz umowę”, który prowadzi do linkdeal.fun/new z danymi.
-3. **Dodaj ogłoszenie** (`/new`): formularz zatwierdzany podpisem portfela, z wyborem Telegram albo Discord i polem na nick.
+2. **Ogłoszenie** (`/o/<id>`): opis i dwa przyciski, „Napisz” (czat) i „Utwórz umowę”, który prowadzi do linkdeal.fun/new z danymi.
+3. **Dodaj ogłoszenie** (`/new`): formularz zatwierdzany podpisem portfela.
 4. **Moje ogłoszenia** (`/my`): lista ogłoszeń podłączonego portfela z przyciskiem „Zamknij”.
 
 ## Technika
@@ -74,6 +66,7 @@ Na start bez kategorii, tagów, zdjęć, ocen i ulubionych.
 
 ## Do decyzji zespołu
 
+- [ ] Czat: które gotowe rozwiązanie z autoryzacją portfelem?
 - [ ] Czy ogłoszenia mają wygasać same, np. po 30 dniach?
 - [ ] Czy „Utwórz umowę” ma przenosić tytuł ogłoszenia jako opis pierwszego taska?
 - [ ] Ochrona przed spamem: wystarczy podpis portfelem i limit ogłoszeń na portfel?
