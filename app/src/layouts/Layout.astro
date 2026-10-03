@@ -1,0 +1,82 @@
+---
+import "../styles/global.css";
+
+const { title } = Astro.props;
+---
+
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title ? `${title} · LinkDeal` : "LinkDeal"}</title>
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <nav class="navbar bg-base-100 shadow-sm">
+      <div class="flex-1">
+        <a href="/" class="btn btn-ghost text-xl">LinkDeal</a>
+        <a href="/new" class="btn btn-ghost btn-sm">Nowa umowa</a>
+      </div>
+      <div id="wallet" class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-primary btn-sm">Połącz portfel</div>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-56 p-2 shadow"></ul>
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-2xl p-4">
+      <slot />
+    </main>
+
+    <script>
+      import {
+        availableWallets,
+        connect,
+        disconnect,
+        onWalletChange,
+        onWalletsRegistered,
+        reconnect,
+        shortAddress,
+      } from "../lib/wallet";
+
+      const button = document.querySelector<HTMLElement>("#wallet [role=button]")!;
+      const menu = document.querySelector<HTMLElement>("#wallet ul")!;
+      let connected = false;
+
+      // Niepołączony: lista wykrytych portfeli. Połączony: adres + „Rozłącz”.
+      function renderWallets() {
+        if (connected) return;
+        menu.innerHTML = "";
+        const wallets = availableWallets();
+        if (wallets.length === 0) {
+          menu.innerHTML = `<li class="p-2 text-sm">Nie wykryto portfela. Zainstaluj np. Phantom.</li>`;
+          return;
+        }
+        for (const wallet of wallets) {
+          const item = document.createElement("li");
+          item.innerHTML = `<a><img src="${wallet.icon}" class="size-5" /> ${wallet.name}</a>`;
+          item.onclick = () => connect(wallet).catch((e) => console.error(e));
+          menu.append(item);
+        }
+      }
+
+      onWalletChange((wallet) => {
+        connected = wallet !== null;
+        if (wallet) {
+          button.textContent = shortAddress(wallet.publicKey.toBase58());
+          menu.innerHTML = `<li><a>Rozłącz</a></li>`;
+          menu.querySelector("a")!.onclick = disconnect;
+        } else {
+          button.textContent = "Połącz portfel";
+          renderWallets();
+        }
+      });
+
+      // Portfele rejestrują się asynchronicznie — odświeżamy listę i próbujemy wznowić połączenie.
+      onWalletsRegistered(() => {
+        renderWallets();
+        reconnect();
+      });
+      reconnect();
+    </script>
+  </body>
+</html>

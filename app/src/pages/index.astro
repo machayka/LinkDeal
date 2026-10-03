@@ -1,0 +1,24 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+  <div class="hero py-10">
+    <div class="hero-content text-center">
+      <div>
+        <h1 class="text-4xl font-bold">Umowa bez pośrednika</h1>
+        <p class="py-4">
+          Pieniądze za zlecenie leżą na koncie umowy na blockchainie Solana. Wykonawca dostaje je task po tasku, gdy
+          zleceniodawca zalicza kolejne etapy. Po deadlinie niewypłacona reszta wraca do zleceniodawcy.
+        </p>
+        <a href="/new" class="btn btn-primary">Utwórz umowę</a>
+      </div>
+    </div>
+  </div>
+
+  <ul class="steps steps-vertical">
+    <li class="step step-primary">Wykonawca tworzy umowę i wysyła link</li>
+    <li class="step step-primary">Zleceniodawca wpłaca kwotę zlecenia</li>
+    <li class="step step-primary">Zleceniodawca zalicza taski, a program wypłaca wykonawcy</li>
+  </ul>
+</Layout>
