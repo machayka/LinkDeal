@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 
 // Adres programu. `anchor keys sync` wpisuje tu klucz z target/deploy/linkdeal-keypair.json.
 declare_id!("AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S");
@@ -34,6 +35,32 @@ pub mod linkdeal {
             deadline,
             offer_expires_at,
         });
+        Ok(())
+    }
+
+    // Zleceniodawca przyjmuje ofertę: wpłaca 100% kwoty do konta umowy.
+    // Kto wpłaci — ten zostaje zleceniodawcą.
+    pub fn fund(ctx: Context<Fund>) -> Result<()> {
+        let escrow = &ctx.accounts.escrow;
+        require!(escrow.client.is_none(), LinkDealError::AlreadyFunded);
+        require!(
+            Clock::get()?.unix_timestamp < escrow.offer_expires_at,
+            LinkDealError::OfferExpired
+        );
+
+        // Przelew SOL z portfela zleceniodawcy na konto umowy (przez System Program).
+        system_program::transfer(
+            CpiContext::new(
+                ctx.accounts.system_program.key(),
+                system_program::Transfer {
+                    from: ctx.accounts.client.to_account_info(),
+                    to: ctx.accounts.escrow.to_account_info(),
+                },
+            ),
+            escrow.amount,
+        )?;
+
+        ctx.accounts.escrow.client = Some(ctx.accounts.client.key());
         Ok(())
     }
 }
@@ -80,6 +107,18 @@ pub struct CreateEscrow<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct Fund<'info> {
+    #[account(mut)] // mut, bo z tego portfela schodzą SOL
+    pub client: Signer<'info>,
+
+    // Anchor sprawdza, że to konto należy do naszego programu i jest typu Escrow.
+    #[account(mut)]
+    pub escrow: Account<'info, Escrow>,
+
+    pub system_program: Program<'info, System>,
+}
+
 // Dane umowy zapisane na blockchainie.
 #[account]
 #[derive(InitSpace)]
@@ -115,6 +154,10 @@ pub enum LinkDealError {
     BadDescription,
     #[msg("Task percentages must sum to 100")]
     PercentSumNot100,
+    #[msg("Contract is already funded")]
+    AlreadyFunded,
+    #[msg("Offer has expired")]
+    OfferExpired,
 }
 
 #[cfg(test)]
