@@ -8,6 +8,9 @@ skip-lint = false
 [programs.localnet]
 linkdeal = "AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S"
 
+[programs.devnet]
+linkdeal = "AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S"
+
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"

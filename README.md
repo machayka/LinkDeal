@@ -4,6 +4,8 @@ Escrow dla freelancerów na Solanie. Warunki zlecenia, czyli kwotę, taski i dea
 
 Hackathon Superteam Poland, challenge „Finance Without Intermediaries”.
 
+**Program (devnet):** [`AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S`](https://explorer.solana.com/address/AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S?cluster=devnet)
+
 ## Jak to działa
 
 1. Strony ustalają warunki poza aplikacją (Discord, OLX, Pracuj.pl).
@@ -65,11 +67,14 @@ docker run -d --name linkdeal --platform linux/amd64 \
 docker exec linkdeal npm install
 docker exec linkdeal cargo test -p linkdeal   # unit testy
 docker exec linkdeal anchor test              # testy integracyjne (Surfpool)
+
+# deploy na devnet (RPC w .env, wzór w .env.example)
+docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "$RPC_URL"'
 ```
 
 ## Status
 
 - [x] Program: wszystkie 5 instrukcji, unit testy i testy integracyjne
-- [ ] Deploy na devnet
+- [x] Deploy na devnet
 - [ ] Frontend
 - [ ] Ostateczny deploy z odebranym upgrade authority
