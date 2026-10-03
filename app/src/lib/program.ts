@@ -35,3 +35,11 @@ export const randomNonce = () => new BN(crypto.getRandomValues(new Uint8Array(8)
 export const explorerTx = (signature: string) => `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
 export const explorerAddress = (address: string) =>
   `https://explorer.solana.com/address/${address}?cluster=devnet`;
+
+// Zamienia techniczne błędy na komunikat dla człowieka.
+export function errorMessage(e: unknown) {
+  const message = e instanceof Error ? e.message : String(e);
+  if (message.includes("Blockhash not found"))
+    return "Transakcja wygasła, zanim została zatwierdzona w portfelu (na devnecie jest ważna ok. 30 s). Spróbuj ponownie.";
+  return message;
+}

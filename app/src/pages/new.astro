@@ -61,7 +61,7 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { BN } from "@anchor-lang/core";
-  import { escrowPda, explorerTx, getProgram, randomNonce } from "../lib/program";
+  import { errorMessage, escrowPda, explorerTx, getProgram, randomNonce } from "../lib/program";
   import { onWalletChange, type AnchorWallet } from "../lib/wallet";
 
   const MAX_TASKS = 10;
@@ -156,7 +156,7 @@ import Layout from "../layouts/Layout.astro";
       form.classList.add("hidden");
       document.querySelector("#result")!.classList.remove("hidden");
     } catch (e) {
-      error.textContent = e instanceof Error ? e.message : String(e);
+      error.textContent = errorMessage(e);
       error.classList.remove("hidden");
       update();
     }
