@@ -63,6 +63,34 @@ pub mod linkdeal {
         ctx.accounts.escrow.client = Some(ctx.accounts.client.key());
         Ok(())
     }
+
+    // Zleceniodawca zalicza kolejny task → program wypłaca jego % wykonawcy.
+    // Ostatni task: wykonawca dostaje całą resztę + rent, konto umowy znika.
+    pub fn approve_milestone(ctx: Context<ApproveMilestone>) -> Result<()> {
+        let escrow = &ctx.accounts.escrow;
+        require!(
+            Clock::get()?.unix_timestamp < escrow.deadline,
+            LinkDealError::DeadlinePassed
+        );
+
+        let index = escrow.approved as usize;
+        if index + 1 == escrow.tasks.len() {
+            // close() przelewa wszystkie lamporty konta wykonawcy i zamyka konto.
+            return ctx.accounts.escrow.close(ctx.accounts.freelancer.to_account_info());
+        }
+
+        // Konto umowy należy do programu, więc program sam zmienia jego saldo — bez CPI.
+        let payout = task_payout(escrow.amount, escrow.tasks[index].percent);
+        ctx.accounts.escrow.sub_lamports(payout)?;
+        ctx.accounts.freelancer.add_lamports(payout)?;
+        ctx.accounts.escrow.approved += 1;
+        Ok(())
+    }
+}
+
+// Kwota za jeden task. u128, żeby mnożenie nie przepełniło u64.
+pub fn task_payout(amount: u64, percent: u8) -> u64 {
+    (amount as u128 * percent as u128 / 100) as u64
 }
 
 // Reguły tasków w osobnej funkcji, żeby dało się je przetestować bez blockchaina.
@@ -119,6 +147,24 @@ pub struct Fund<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct ApproveMilestone<'info> {
+    // Tylko ten, kto wpłacił (client), może zaliczać taski.
+    pub client: Signer<'info>,
+
+    // mut, bo dostaje wypłatę. Nie musi podpisywać — pieniądze tylko przychodzą.
+    #[account(mut)]
+    pub freelancer: SystemAccount<'info>,
+
+    // has_one = freelancer: przekazany wykonawca musi być tym z umowy.
+    #[account(
+        mut,
+        has_one = freelancer,
+        constraint = escrow.client == Some(client.key()) @ LinkDealError::NotClient
+    )]
+    pub escrow: Account<'info, Escrow>,
+}
+
 // Dane umowy zapisane na blockchainie.
 #[account]
 #[derive(InitSpace)]
@@ -158,6 +204,10 @@ pub enum LinkDealError {
     AlreadyFunded,
     #[msg("Offer has expired")]
     OfferExpired,
+    #[msg("Deadline has passed")]
+    DeadlinePassed,
+    #[msg("Only the client who funded the contract can do this")]
+    NotClient,
 }
 
 #[cfg(test)]
@@ -190,6 +240,14 @@ mod tests {
         assert!(validate_tasks(&[]).is_err());
         assert!(validate_tasks(&vec![task(5); 11]).is_err()); // 11 tasków — za dużo
         assert!(validate_tasks(&vec![task(10); 10]).is_ok()); // 10 tasków — maksimum
+    }
+
+    #[test]
+    fn payout_is_percent_of_amount() {
+        assert_eq!(task_payout(3_000_000_000, 33), 990_000_000);
+        assert_eq!(task_payout(100, 5), 5);
+        assert_eq!(task_payout(10, 33), 3); // zaokrąglenie w dół — resztę dostanie ostatni task
+        assert_eq!(task_payout(u64::MAX, 100), u64::MAX); // brak przepełnienia
     }
 
     #[test]
