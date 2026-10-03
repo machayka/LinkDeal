@@ -1,6 +1,6 @@
 # LinkDeal
 
-Escrow dla freelancerów na Solanie. Warunki zlecenia, czyli kwotę, taski i deadline, pilnuje program on-chain. Nie ma pośrednika, backendu ani bazy danych.
+Escrow dla freelancerów na Solanie. Warunki zlecenia, czyli kwotę, taski i deadline, pilnuje program on-chain. Umowy działają bez pośrednika, backendu i bazy danych.
 
 Hackathon Superteam Poland, challenge „Finance Without Intermediaries”.
 
@@ -38,7 +38,10 @@ Na Solanie nic nie dzieje się samo. Anulowanie i zwrot uruchamia się przyciski
 
 ## Backend służy tylko do ogłoszeń
 
-Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile wypłacić, deadline i zwrot. Backend obsługuje wyłącznie tablicę ogłoszeń, która nie ma związku z blockchainem.
+Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile wypłacić, deadline i zwrot. Backend obsługuje wyłącznie ogłoszenia, które nie mają związku z blockchainem.
+
+- **linkdeal.fun** to aplikacja umów: same statyczne pliki, bez serwera aplikacji i bez bazy.
+- **ogloszenia.linkdeal.fun** to ogłoszenia: osobna aplikacja z własną bazą Postgres.
 
 - Backend nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji.
 - Frontend czyta umowę prosto z blockchaina, a transakcje podpisuje portfel użytkownika.
@@ -56,7 +59,9 @@ Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile w
 ```
 programs/linkdeal/src/lib.rs   cały program: instrukcje, konto umowy, błędy, unit testy
 tests/linkdeal.ts              testy integracyjne na lokalnym blockchainie
-web/                           frontend (Astro + daisyUI) — w budowie
+app/                           aplikacja umów (Astro + daisyUI, statyczna, bez backendu) → linkdeal.fun
+board/                         ogłoszenia (Astro + API + Postgres) → ogloszenia.linkdeal.fun
+deploy/                        serwer: docker-compose.yml + Caddyfile
 Dockerfile, .devcontainer/     środowisko: Anchor 1.1.2, Rust 1.95, Node 24, Surfpool
 ```
 
@@ -84,5 +89,7 @@ docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "
 
 - [x] Program: wszystkie 5 instrukcji, unit testy i testy integracyjne
 - [x] Deploy na devnet
-- [ ] Frontend
+- [ ] Aplikacja umów (linkdeal.fun)
+- [ ] Serwer: Docker + Caddy
+- [ ] Ogłoszenia (ogloszenia.linkdeal.fun)
 - [ ] Ostateczny deploy z odebranym upgrade authority
