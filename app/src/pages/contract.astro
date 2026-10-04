@@ -20,6 +20,9 @@ import Layout from "../layouts/Layout.astro";
           <span id="status" class="badge badge-lg"></span>
         </div>
         <p id="role" class="font-semibold"></p>
+        <p id="rent" class="hidden text-xs opacity-60">
+          Twoja kaucja za konto umowy (ok. 0,0065 SOL) wróci do Ciebie po zakończeniu umowy.
+        </p>
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
           <dt class="opacity-60">Wykonawca</dt><dd id="freelancer"></dd>
           <dt class="opacity-60">Zleceniodawca</dt><dd id="client"></dd>
@@ -102,6 +105,7 @@ import Layout from "../layouts/Layout.astro";
     $("#status").className = `badge badge-lg ${statusClass}`;
     $("#amount").textContent = sol(escrow.amount);
     $("#role").textContent = isFreelancer ? "Jesteś wykonawcą" : isClient ? "Jesteś zleceniodawcą" : "";
+    $("#rent").classList.toggle("hidden", !isFreelancer);
     $("#freelancer").replaceChildren(addressLink(escrow.freelancer));
     $("#client").replaceChildren(addressLink(escrow.client));
     $("#offer").textContent = time(escrow.offerExpiresAt);

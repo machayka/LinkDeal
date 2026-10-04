@@ -33,14 +33,18 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <div id="error" class="alert alert-error hidden"></div>
-      <button id="submit" class="btn btn-primary">Utwórz umowę</button>
+      <button id="submit" class="btn btn-primary">Wyślij ofertę</button>
+      <p class="text-xs opacity-60">
+        Utworzenie oferty blokuje ok. 0,0065 SOL kaucji za miejsce na blockchainie. Wraca do Ciebie w całości, gdy umowa
+        się zakończy: po zaliczeniu ostatniego taska, po zwrocie reszty po deadlinie albo po anulowaniu wygasłej oferty.
+      </p>
     </div>
   </form>
 
   <!-- Po utworzeniu umowy: link do wysłania zleceniodawcy -->
   <div id="result" class="card bg-base-100 hidden shadow">
     <div class="card-body">
-      <h2 class="card-title">Umowa utworzona ✓</h2>
+      <h2 class="card-title">Oferta utworzona ✓</h2>
       <p>Wyślij ten link zleceniodawcy:</p>
       <div class="join w-full">
         <input id="link" readonly class="input join-item w-full font-mono text-sm" />
@@ -121,9 +125,9 @@ import Layout from "../layouts/Layout.astro";
     sumBadge.className = `badge ${sum === 100 ? "badge-success" : "badge-error"}`;
     addTask.disabled = tasks.children.length >= MAX_TASKS;
 
-    const problem = wallet ? validate() : "Połącz portfel, aby utworzyć umowę.";
+    const problem = wallet ? validate() : "Połącz portfel, aby wysłać ofertę.";
     submit.disabled = problem !== null;
-    submit.textContent = problem ?? "Utwórz umowę";
+    submit.textContent = problem ?? "Wyślij ofertę";
   }
 
   form.oninput = update;
