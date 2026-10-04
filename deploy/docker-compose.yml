@@ -1,0 +1,44 @@
+# Serwer: docker compose up -d --build (w katalogu deploy/, z plikiem .env obok — wzór w .env.example)
+services:
+  # HTTPS (certyfikaty automatycznie) + statyczna aplikacja umów + proxy do ogłoszeń
+  caddy:
+    build:
+      context: ..
+      dockerfile: deploy/caddy.Dockerfile
+      args:
+        PUBLIC_RPC_URL: ${PUBLIC_RPC_URL}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    restart: unless-stopped
+
+  # Ogłoszenia — jedyny backend; nie dotyka pieniędzy ani umów
+  board:
+    build:
+      context: ..
+      dockerfile: board/Dockerfile
+      args:
+        PUBLIC_APP_URL: https://linkdeal.fun
+    environment:
+      DATABASE_URL: postgres://linkdeal:${POSTGRES_PASSWORD}@db:5432/linkdeal
+    depends_on:
+      db: { condition: service_healthy }
+    restart: unless-stopped
+
+  # Baza ogłoszeń — bez wystawionego portu, widzi ją tylko board
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: linkdeal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: linkdeal
+    volumes: [db_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "linkdeal"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:

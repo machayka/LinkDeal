@@ -1,0 +1,17 @@
+# Aplikacja umów: same statyczne pliki, bez serwera aplikacji.
+linkdeal.fun {
+	root * /srv/app
+	# /contract/<adres> → jedna strona umowy, która czyta adres z URL-a
+	rewrite /contract/* /contract/index.html
+	try_files {path} {path}/index.html
+	file_server
+}
+
+www.linkdeal.fun {
+	redir https://linkdeal.fun{uri} permanent
+}
+
+# Ogłoszenia: aplikacja Node z bazą (kontener board).
+ogloszenia.linkdeal.fun {
+	reverse_proxy board:4321
+}
