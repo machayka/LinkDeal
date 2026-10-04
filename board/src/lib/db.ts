@@ -14,5 +14,8 @@ export type Offer = {
   description: string;
   budget_sol: string; // numeric z Postgresa przychodzi jako tekst — bez błędów zaokrągleń
   status: "open" | "closed";
+  contact_email: string | null;
+  contact_telegram: string | null;
+  contact_discord: string | null;
   created_at: Date;
 };

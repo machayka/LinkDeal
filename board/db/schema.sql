@@ -8,3 +8,8 @@ CREATE TABLE IF NOT EXISTS offers (
   status        text        NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+-- Kontakt do autora ogłoszenia (co najmniej jeden — pilnuje API). ADD COLUMN IF NOT EXISTS: działa też na istniejącej bazie.
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS contact_email    text CHECK (length(contact_email) <= 254);
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS contact_telegram text CHECK (contact_telegram ~ '^[A-Za-z0-9_]{5,32}$');
+ALTER TABLE offers ADD COLUMN IF NOT EXISTS contact_discord  text CHECK (contact_discord ~ '^[a-z0-9_.]{2,32}$');

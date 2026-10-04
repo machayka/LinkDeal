@@ -1,4 +1,5 @@
 ---
+import ContactIcon from "../../components/ContactIcon.astro";
 import Layout from "../../layouts/Layout.astro";
 import { sql, type Offer } from "../../lib/db";
 
@@ -34,7 +35,19 @@ const budget = offer && Number(offer.budget_sol).toLocaleString("pl-PL", { maxim
           {offer.status === "open" && (
             <div id="for-others" class="flex flex-wrap items-center justify-between gap-2">
               <p class="text-sm opacity-70">Chcesz się podjąć tego zlecenia? Przygotuj ofertę dla zleceniodawcy.</p>
-              <a href={contractUrl} class="btn btn-primary">Utwórz ofertę</a>
+              <div class="flex gap-2">
+                {/* „Napisz”: kanały kontaktu autora, pobierane dopiero po połączeniu portfela (skrypt poniżej). */}
+                <div class="dropdown dropdown-end">
+                  <div tabindex="0" role="button" class="btn">Napisz</div>
+                  <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-2 shadow">
+                    <li id="contact-wallet"><span class="text-sm">Połącz portfel, aby zobaczyć kontakt.</span></li>
+                    <li id="contact-telegram" class="hidden"><a target="_blank"><ContactIcon kind="telegram" /><span /></a></li>
+                    <li id="contact-email" class="hidden"><a><ContactIcon kind="email" /><span /></a></li>
+                    <li id="contact-discord" class="hidden"><button type="button"><ContactIcon kind="discord" /><span /></button></li>
+                  </ul>
+                </div>
+                <a href={contractUrl} class="btn btn-primary">Utwórz ofertę</a>
+              </div>
             </div>
           )}
           <div id="for-author" class="alert hidden">
@@ -47,16 +60,51 @@ const budget = offer && Number(offer.budget_sol).toLocaleString("pl-PL", { maxim
   }
 </Layout>
 
-{offer && <span id="author" data-address={offer.client_wallet} hidden />}
+{offer && <span id="author" data-address={offer.client_wallet} data-id={offer.id} data-title={offer.title} hidden />}
 
 <script>
   import { onWalletChange } from "../../lib/wallet";
 
   // Autor ogłoszenia nie składa oferty sam sobie — widzi link do zarządzania ogłoszeniem.
-  const author = document.querySelector<HTMLElement>("#author")?.dataset.address;
+  const { address: author, id, title } = document.querySelector<HTMLElement>("#author")?.dataset ?? {};
+  const item = (name: string) => document.querySelector<HTMLElement>(`#contact-${name}`)!;
+  let contactLoaded = false;
+
   onWalletChange((wallet) => {
     const isAuthor = !!wallet && wallet.address === author;
     document.querySelector("#for-others")?.classList.toggle("hidden", isAuthor);
     document.querySelector("#for-author")?.classList.toggle("hidden", !isAuthor);
+    if (wallet && !isAuthor) loadContact();
   });
+
+  // Kontakt autora: Telegram otwiera rozmowę, e-mail program pocztowy, Discord kopiuje nick (nie ma linku do rozmowy).
+  async function loadContact() {
+    if (contactLoaded || !id) return;
+    const response = await fetch(`/api/offers/${id}/contact`);
+    if (!response.ok) return;
+    const contact: { email: string | null; telegram: string | null; discord: string | null } = await response.json();
+    contactLoaded = true;
+    // Starsze ogłoszenia mogą nie mieć kontaktu.
+    if (!contact.telegram && !contact.email && !contact.discord) {
+      item("wallet").querySelector("span")!.textContent = "Autor nie podał kontaktu.";
+      return;
+    }
+    item("wallet").classList.add("hidden");
+    const show = (name: string, text: string) => {
+      item(name).classList.remove("hidden");
+      item(name).querySelector("span")!.textContent = text; // dane od autora — zawsze jako tekst
+      return item(name).querySelector<HTMLAnchorElement & HTMLButtonElement>("a, button")!;
+    };
+    if (contact.telegram) show("telegram", `Telegram · @${contact.telegram}`).href = `https://t.me/${contact.telegram}`;
+    if (contact.email)
+      show("email", `E-mail · ${contact.email}`).href =
+        `mailto:${contact.email}?subject=${encodeURIComponent(`Ogłoszenie: ${title}`)}`;
+    if (contact.discord) {
+      const button = show("discord", `Discord · ${contact.discord} (kopiuj)`);
+      button.onclick = () => {
+        navigator.clipboard.writeText(contact.discord!);
+        button.querySelector("span")!.textContent = `Skopiowano „${contact.discord}” — wyszukaj na Discordzie`;
+      };
+    }
+  }
 </script>

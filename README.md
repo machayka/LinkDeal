@@ -43,7 +43,7 @@ Przyjętej umowy nie da się anulować w trakcie. Gdyby mogła to zrobić jedna 
 Cała logika umowy działa w programie on-chain: kto przyjmuje ofertę, kto zalicza, ile wypłacić, deadline i zwrot.
 
 - **linkdeal.fun** (aplikacja umów) to same statyczne pliki. Czyta umowy prosto z blockchaina, a transakcje podpisuje portfel użytkownika.
-- **ogloszenia.linkdeal.fun** to osobna aplikacja z bazą Postgres. Nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji.
+- **ogloszenia.linkdeal.fun** to osobna aplikacja z bazą Postgres. Nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji. Autor ogłoszenia podaje kontakt (e-mail, Telegram albo Discord), który wykonawcy widzą po kliknięciu „Napisz” i połączeniu portfela.
 - Nawet jeśli serwer przestanie działać, każdą umowę da się dokończyć bezpośrednio przez program, np. z CLI.
 
 ## Odpowiedzi na pytania jury
@@ -56,7 +56,7 @@ Cała logika umowy działa w programie on-chain: kto przyjmuje ofertę, kto zali
 ## Pomysły na później
 
 - **Zakończenie umowy za zgodą obu stron:** wcześniejsze rozliczenie, gdy wykonawca i zleceniodawca podpiszą je razem. To nowy mechanizm w programie, celowo pominięty na hackathon.
-- **Czat w ogłoszeniach** z logowaniem portfelem, najlepiej na gotowym rozwiązaniu (kandydaci: TalkJS, Solchat; XMTP po dodaniu obsługi Solany).
+- **Czat w ogłoszeniach** z logowaniem portfelem zamiast kontaktu przez e-mail, Telegram lub Discord.
 
 ## Co gdzie jest
 

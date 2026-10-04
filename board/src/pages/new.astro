@@ -1,4 +1,5 @@
 ---
+import ContactIcon from "../components/ContactIcon.astro";
 import Info from "../components/Info.astro";
 import Layout from "../layouts/Layout.astro";
 ---
@@ -37,6 +38,25 @@ import Layout from "../layouts/Layout.astro";
         </label>
       </fieldset>
 
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">
+          Kontakt
+          <Info text="Wykonawcy zobaczą go po kliknięciu „Napisz” i połączeniu portfela. Podaj co najmniej jeden." />
+        </legend>
+        <label class="input w-full">
+          <ContactIcon kind="email" />
+          <input name="email" type="email" placeholder="jan@firma.pl" />
+        </label>
+        <label class="input w-full">
+          <ContactIcon kind="telegram" />
+          <input name="telegram" placeholder="Telegram: @nick" />
+        </label>
+        <label class="input w-full">
+          <ContactIcon kind="discord" />
+          <input name="discord" placeholder="Discord: nick" />
+        </label>
+      </fieldset>
+
       <div id="error" class="alert alert-error hidden"></div>
       <button id="submit" class="btn btn-primary">Połącz portfel, aby dodać</button>
       <p class="text-xs opacity-60">
@@ -47,6 +67,7 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <script>
+  import { contactError, normalizeContact } from "../lib/contact";
   import { addOfferMessage } from "../lib/messages";
   import { onWalletChange, type ConnectedWallet } from "../lib/wallet";
 
@@ -65,15 +86,20 @@ import Layout from "../layouts/Layout.astro";
     event.preventDefault();
     if (!wallet) return;
     const data = new FormData(form);
-    const offer = {
-      title: String(data.get("title")).trim(),
-      description: String(data.get("description")).trim(),
-      budget: String(data.get("budget")),
-    };
+    const field = (name: string) => String(data.get(name) ?? "");
+    const contact = normalizeContact({ email: field("email"), telegram: field("telegram"), discord: field("discord") });
+    const offer = { title: field("title").trim(), description: field("description").trim(), budget: field("budget"), ...contact };
     const timestamp = Date.now();
 
-    submit.disabled = true;
     error.classList.add("hidden");
+    const problem = contactError(contact);
+    if (problem) {
+      error.textContent = problem;
+      error.classList.remove("hidden");
+      return;
+    }
+
+    submit.disabled = true;
     try {
       const signature = await wallet.signMessage(addOfferMessage(offer, timestamp));
       const response = await fetch("/api/offers", {

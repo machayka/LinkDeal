@@ -23,6 +23,7 @@
     "bs58": "6.0.0",
     "daisyui": "5.7.47",
     "postgres": "3.4.9",
+    "simple-icons": "16.34.0",
     "tailwindcss": "^4.3.3",
     "tweetnacl": "1.0.3"
   },
