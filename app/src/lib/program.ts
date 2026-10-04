@@ -38,9 +38,14 @@ export type Escrow = NonNullable<Awaited<ReturnType<typeof fetchEscrow>>>;
 // potem client: 1 bajt „jest/nie ma” i adres. Zakończone umowy są zamknięte, więc ich tu nie ma.
 const FREELANCER_OFFSET = 8;
 const CLIENT_OFFSET = 8 + 32 + 1;
+// Rozmiar konta w obecnym formacie (test `escrow_size` w programie). Pomija stare konta sprzed zmiany na kwoty.
+const ESCROW_SIZE = 1222;
 export function myContracts(wallet: web3.PublicKey, role: "freelancer" | "client") {
   const offset = role === "freelancer" ? FREELANCER_OFFSET : CLIENT_OFFSET;
-  return getProgram(null).account.escrow.all([{ memcmp: { offset, bytes: wallet.toBase58() } }]);
+  return getProgram(null).account.escrow.all([
+    { dataSize: ESCROW_SIZE },
+    { memcmp: { offset, bytes: wallet.toBase58() } },
+  ]);
 }
 
 // Status umowy do wyświetlenia: [tekst, klasa koloru daisyUI].

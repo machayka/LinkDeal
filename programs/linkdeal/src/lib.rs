@@ -293,6 +293,13 @@ mod tests {
         assert!(validate_tasks(&vec![task(1); 10]).is_ok()); // 10 — maksimum
     }
 
+    // Rozmiar konta umowy. Front filtruje po nim konta (app/src/lib/program.ts, ESCROW_SIZE) —
+    // po zmianie struktury Escrow trzeba zaktualizować oba miejsca.
+    #[test]
+    fn escrow_size() {
+        assert_eq!(Escrow::DISCRIMINATOR.len() + Escrow::INIT_SPACE, 1222);
+    }
+
     #[test]
     fn bad_description() {
         let empty = Task { description: "".into(), amount: 100 };
