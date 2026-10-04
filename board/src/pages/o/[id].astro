@@ -8,30 +8,55 @@ if (!offer) Astro.response.status = 404;
 
 // „Utwórz ofertę” otwiera aplikację umów z kwotą z ogłoszenia.
 const contractUrl = offer && `${import.meta.env.PUBLIC_APP_URL}/new?amount=${offer.budget_sol}`;
-const author = offer && `${offer.client_wallet.slice(0, 4)}…${offer.client_wallet.slice(-4)}`;
+const budget = offer && Number(offer.budget_sol).toLocaleString("pl-PL", { maximumFractionDigits: 9 });
 ---
 
 <Layout title={offer?.title ?? "Nie znaleziono"}>
+  <a href="/" class="link link-hover mb-3 inline-block text-sm opacity-70">← Wszystkie ogłoszenia</a>
+
   {!offer && <div class="alert">Nie ma takiego ogłoszenia.</div>}
   {
     offer && (
       <div class="card bg-base-100 shadow">
         <div class="card-body gap-4">
-          <div class="flex items-start justify-between gap-2">
+          <div>
             <h1 class="text-2xl font-bold">{offer.title}</h1>
-            <span class="badge badge-primary badge-lg whitespace-nowrap">{offer.budget_sol} SOL</span>
+            <p class="text-xs opacity-60">Dodane {offer.created_at.toLocaleDateString("pl-PL")}</p>
           </div>
+          <p>
+            Budżet: <span class="text-lg font-semibold">{budget} SOL</span>
+            <span class="text-sm opacity-60">(orientacyjny)</span>
+          </p>
           {offer.status === "closed" && <div class="alert alert-warning">Ogłoszenie zamknięte.</div>}
           <p class="whitespace-pre-line">{offer.description}</p>
-          <p class="text-xs opacity-60">
-            Dodane {offer.created_at.toLocaleDateString("pl-PL")} przez <span class="font-mono">{author}</span>
-          </p>
-          <div class="card-actions">
-            <button class="btn" disabled>Napisz (czat wkrótce)</button>
-            <a href={contractUrl} class="btn btn-primary">Utwórz ofertę</a>
+
+          {/* Dla wykonawców — ukrywane, gdy ogląda autor (skrypt poniżej). */}
+          {offer.status === "open" && (
+            <div id="for-others" class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm opacity-70">Chcesz się podjąć tego zlecenia? Przygotuj ofertę dla zleceniodawcy.</p>
+              <a href={contractUrl} class="btn btn-primary">Utwórz ofertę</a>
+            </div>
+          )}
+          <div id="for-author" class="alert hidden">
+            <span>To Twoje ogłoszenie. Zarządzasz nim w <a href="/my" class="link">Moich ogłoszeniach</a>.</span>
           </div>
+          <p class="text-xs opacity-50">Czat ze zleceniodawcą wkrótce.</p>
         </div>
       </div>
     )
   }
 </Layout>
+
+{offer && <span id="author" data-address={offer.client_wallet} hidden />}
+
+<script>
+  import { onWalletChange } from "../../lib/wallet";
+
+  // Autor ogłoszenia nie składa oferty sam sobie — widzi link do zarządzania ogłoszeniem.
+  const author = document.querySelector<HTMLElement>("#author")?.dataset.address;
+  onWalletChange((wallet) => {
+    const isAuthor = !!wallet && wallet.address === author;
+    document.querySelector("#for-others")?.classList.toggle("hidden", isAuthor);
+    document.querySelector("#for-author")?.classList.toggle("hidden", !isAuthor);
+  });
+</script>
