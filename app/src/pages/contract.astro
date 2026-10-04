@@ -14,7 +14,7 @@ import Layout from "../layouts/Layout.astro";
       <div class="card-body">
         <div class="flex items-start justify-between gap-2">
           <div>
-            <h1 class="text-sm opacity-60">Umowa</h1>
+            <h1 id="kind" class="text-sm opacity-60"></h1>
             <p id="amount" class="text-3xl font-bold"></p>
           </div>
           <span id="status" class="badge badge-lg"></span>
@@ -39,7 +39,26 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
-    <div id="actions" class="flex flex-col gap-2"></div>
+    <!-- Wykonawca: link do wysłania zleceniodawcy (dopóki oferta nie jest przyjęta) -->
+    <div id="share" class="card bg-base-100 hidden shadow">
+      <div class="card-body gap-2">
+        <p>Wyślij ten link zleceniodawcy:</p>
+        <div class="join w-full">
+          <input id="link" readonly class="input join-item w-full font-mono text-sm" />
+          <button id="copy" class="btn join-item">Kopiuj</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zleceniodawca: co oznacza przyjęcie oferty -->
+    <div id="explain" class="alert alert-info hidden">
+      <span>
+        Po przyjęciu oferty kwota zostanie zamrożona na koncie umowy. Wykonawca dostanie wynagrodzenie dopiero, gdy zaliczysz
+        kolejne milestone'y. To, czego nie zaliczysz do deadline'u, wróci do Ciebie.
+      </span>
+    </div>
+
+    <div id="actions" class="flex flex-col gap-3"></div>
     <div id="message" class="alert hidden"></div>
   </div>
 </Layout>
@@ -103,7 +122,10 @@ import Layout from "../layouts/Layout.astro";
     const [statusText, statusClass] = contractStatus(escrow, now);
     $("#status").textContent = statusText;
     $("#status").className = `badge badge-lg ${statusClass}`;
+    $("#kind").textContent = funded ? "Umowa" : "Oferta";
     $("#amount").textContent = sol(escrow.amount);
+    $("#share").classList.toggle("hidden", !(isFreelancer && !funded && offerValid));
+    $("#explain").classList.toggle("hidden", !(!isFreelancer && !funded && offerValid));
     $("#role").textContent = isFreelancer ? "Jesteś wykonawcą" : isClient ? "Jesteś zleceniodawcą" : "";
     $("#rent").classList.toggle("hidden", !isFreelancer);
     $("#freelancer").replaceChildren(addressLink(escrow.freelancer));
@@ -127,39 +149,65 @@ import Layout from "../layouts/Layout.astro";
     );
 
     // Przyciski: tylko te akcje, które program w tej chwili przyjmie.
-    const actions: [string, () => Promise<string>, string?][] = []; // [napis, transakcja, dopisek po sukcesie]
+    // hint — tekst pod przyciskiem, note — dopisek w komunikacie po udanej transakcji.
+    type Action = { label: string; run: () => Promise<string>; hint?: string; note?: string };
+    const actions: Action[] = [];
     const program = wallet && getProgram(wallet);
     const accounts = { escrow: escrowAddress(), freelancer: escrow.freelancer };
     if (program && !funded && offerValid && !isFreelancer)
-      actions.push([`Przyjmij ofertę (wpłać ${sol(escrow.amount)})`, () =>
-        program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc(),
-        `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my">możesz już zamknąć swoje ogłoszenie →</a>`]);
+      actions.push({
+        label: `Przyjmij ofertę i zamroź ${sol(escrow.amount)}`,
+        run: () => program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc(),
+        note: `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my">możesz już zamknąć swoje ogłoszenie →</a>`,
+      });
     if (program && isClient && beforeDeadline) {
       const task = escrow.tasks[escrow.approved];
-      actions.push([`Zalicz milestone ${escrow.approved + 1}: ${task.description}`, () =>
-        program.methods.approveMilestone().accountsPartial({ ...accounts, client: me! }).rpc()]);
+      actions.push({
+        label: `Zalicz milestone ${escrow.approved + 1}: ${task.description}`,
+        run: () => program.methods.approveMilestone().accountsPartial({ ...accounts, client: me! }).rpc(),
+        hint: `Wykonawca od razu dostanie ${sol(task.amount)}. Tego nie da się cofnąć. Do deadline'u: ${timeLeft(escrow.deadline.toNumber() - now)}.`,
+      });
     }
     if (program && !funded && !offerValid)
-      actions.push(["Anuluj ofertę (rent wraca do wykonawcy)", () =>
-        program.methods.cancel().accountsPartial(accounts).rpc()]);
+      actions.push({
+        label: isFreelancer ? "Anuluj ofertę i odzyskaj kaucję" : "Anuluj ofertę",
+        run: () => program.methods.cancel().accountsPartial(accounts).rpc(),
+      });
     if (program && funded && !beforeDeadline)
-      actions.push(["Zwróć resztę zleceniodawcy", () =>
-        program.methods.refundAfterDeadline().accountsPartial({ ...accounts, client: escrow!.client! }).rpc()]);
+      actions.push({
+        label: "Zwróć niewypłaconą kwotę zleceniodawcy",
+        run: () => program.methods.refundAfterDeadline().accountsPartial({ ...accounts, client: escrow!.client! }).rpc(),
+      });
 
     $("#actions").replaceChildren(
-      ...actions.map(([label, run, note]) => {
+      ...actions.map(({ label, run, hint, note }) => {
+        const box = document.createElement("div");
         const button = document.createElement("button");
-        button.className = "btn btn-primary";
-        button.textContent = label;
+        button.className = "btn btn-primary w-full";
+        button.textContent = label; // opis milestone'u od wykonawcy — zawsze jako tekst
         button.disabled = busy;
         button.onclick = () => execute(button, run, note);
-        return button;
+        box.append(button);
+        if (hint) {
+          const text = document.createElement("p");
+          text.className = "mt-1 text-xs opacity-60";
+          text.textContent = hint;
+          box.append(text);
+        }
+        return box;
       }),
     );
     if (!wallet && (offerValid || funded)) $("#actions").innerHTML = `<p class="text-sm opacity-60">Połącz portfel, aby wykonać akcję.</p>`;
   }
 
   const escrowAddress = () => new web3.PublicKey(addressText);
+
+  // „3 dni”, „5 godz.”, „12 min” — ile zostało czasu.
+  function timeLeft(seconds: number) {
+    if (seconds >= 86400) return `${Math.floor(seconds / 86400)} dni`;
+    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} godz.`;
+    return `${Math.max(1, Math.floor(seconds / 60))} min`;
+  }
   const BOARD_URL = import.meta.env.PUBLIC_BOARD_URL ?? "https://ogloszenia.linkdeal.fun";
 
   // Wysyła transakcję, pokazuje wynik i odświeża dane umowy.
@@ -184,6 +232,12 @@ import Layout from "../layouts/Layout.astro";
     wallet = w;
     render();
   });
+
+  $<HTMLInputElement>("#link").value = location.origin + location.pathname;
+  $("#copy").onclick = () => {
+    navigator.clipboard.writeText($<HTMLInputElement>("#link").value);
+    $("#copy").textContent = "Skopiowano ✓";
+  };
   setInterval(render, 15_000); // status i przyciski zmieniają się z upływem czasu (oferta, deadline)
   load();
 </script>
