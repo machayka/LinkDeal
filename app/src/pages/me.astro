@@ -56,7 +56,7 @@ import Layout from "../layouts/Layout.astro";
     history.innerHTML = `Zakończone umowy znikają z blockchaina (rent wraca do wykonawcy). Ich historia: <a class="link" target="_blank" href="${explorerAddress(wallet.publicKey.toBase58())}">Twój portfel w Solana Explorer</a>.`;
 
     content.replaceChildren(
-      await section("Jako wykonawca", asFreelancer, "Brak aktywnych umów. <a href='/new' class='link'>Utwórz ofertę</a>"),
+      await section("Jako wykonawca", asFreelancer, "Brak aktywnych ofert. <a href='/new' class='link'>Utwórz ofertę</a>"),
       await section("Jako zleceniodawca", asClient, "Brak aktywnych umów, w których wpłaciłeś kwotę."),
       history,
     );
