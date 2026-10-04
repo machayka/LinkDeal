@@ -133,7 +133,7 @@ import Layout from "../layouts/Layout.astro";
     if (program && !funded && offerValid && !isFreelancer)
       actions.push([`Przyjmij ofertę (wpłać ${sol(escrow.amount)})`, () =>
         program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc(),
-        `Masz ogłoszenie dla tego zlecenia? <a class="link" href="${BOARD_URL}/my">Zamknij je w Ogłoszeniach →</a>`]);
+        `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my">możesz już zamknąć swoje ogłoszenie →</a>`]);
     if (program && isClient && beforeDeadline) {
       const task = escrow.tasks[escrow.approved];
       actions.push([`Zalicz Task ${escrow.approved + 1}: ${task.description}`, () =>
