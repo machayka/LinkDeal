@@ -1,4 +1,5 @@
 ---
+import Info from "../components/Info.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
@@ -15,12 +16,18 @@ import Layout from "../layouts/Layout.astro";
     <div class="card-body gap-4">
       <div class="grid gap-4 sm:grid-cols-2">
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Oferta ważna do</legend>
+          <legend class="fieldset-legend">
+            Oferta ważna do
+            <Info text="Do tego momentu zleceniodawca może przyjąć ofertę. Jeśli tego nie zrobi, oferta wygasa, a Ty możesz ją anulować i odzyskać kaucję." />
+          </legend>
           <input name="offerExpiresAt" type="datetime-local" required class="input validator w-full" />
           <p class="validator-hint hidden">Oferta musi być ważna w przyszłości.</p>
         </fieldset>
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Deadline zlecenia</legend>
+          <legend class="fieldset-legend">
+            Deadline zlecenia
+            <Info text="Do tego momentu zleceniodawca może zaliczać milestone'y. Po deadlinie niewypłacona część kwoty wraca do zleceniodawcy, a to, co już zarobiłeś, zostaje u Ciebie." />
+          </legend>
           <input name="deadline" type="datetime-local" required class="input validator w-full" />
           <p class="validator-hint hidden">Deadline nie może być wcześniej niż koniec ważności oferty.</p>
         </fieldset>
