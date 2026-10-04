@@ -6,7 +6,7 @@ const id = Number(Astro.params.id);
 const [offer] = Number.isInteger(id) ? await sql<Offer[]>`SELECT * FROM offers WHERE id = ${id}` : [];
 if (!offer) Astro.response.status = 404;
 
-// „Utwórz umowę” otwiera aplikację umów z kwotą z ogłoszenia.
+// „Utwórz ofertę” otwiera aplikację umów z kwotą z ogłoszenia.
 const contractUrl = offer && `${import.meta.env.PUBLIC_APP_URL}/new?amount=${offer.budget_sol}`;
 const author = offer && `${offer.client_wallet.slice(0, 4)}…${offer.client_wallet.slice(-4)}`;
 ---
