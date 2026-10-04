@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { BOARD_URL } from "../lib/config";
 ---
 
 <Layout>
@@ -12,13 +13,17 @@ import Layout from "../layouts/Layout.astro";
           zleceniodawca zalicza kolejne etapy. Po deadlinie niewypłacona reszta wraca do zleceniodawcy.
         </p>
         <a href="/new" class="btn btn-primary">Utwórz ofertę</a>
+        <p class="mt-4 text-sm opacity-70">
+          Dostałeś link do oferty? Otwórz go, żeby ją przyjąć. Szukasz wykonawcy?
+          <a href={BOARD_URL} class="link">Dodaj ogłoszenie →</a>
+        </p>
       </div>
     </div>
   </div>
 
   <ul class="steps steps-vertical">
     <li class="step step-primary">Wykonawca tworzy ofertę i wysyła link</li>
-    <li class="step step-primary">Zleceniodawca wpłaca kwotę zlecenia</li>
+    <li class="step step-primary">Zleceniodawca przyjmuje ofertę i zamraża kwotę</li>
     <li class="step step-primary">Zleceniodawca zalicza milestone'y, a program wypłaca wykonawcy</li>
   </ul>
 </Layout>

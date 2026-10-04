@@ -55,6 +55,10 @@ export function contractStatus(escrow: Escrow, now = Date.now() / 1000): [string
   return now < escrow.deadline.toNumber() ? ["W realizacji", "badge-primary"] : ["Po deadlinie", "badge-warning"];
 }
 
+// Data i godzina bez sekund, np. „4.10.2026, 01:55”.
+export const dateTime = (unix: { toNumber(): number }) =>
+  new Date(unix.toNumber() * 1000).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+
 export const sol = (lamports: BN | number) =>
   `${(Number(lamports) / 1e9).toLocaleString("pl-PL", { maximumFractionDigits: 9 })} SOL`;
 

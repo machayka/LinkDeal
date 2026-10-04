@@ -65,7 +65,8 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { web3 } from "@anchor-lang/core";
-  import { contractStatus, errorMessage, explorerAddress, explorerTx, fetchEscrow, getProgram, sol, type Escrow } from "../lib/program";
+  import { contractStatus, dateTime, errorMessage, explorerAddress, explorerTx, fetchEscrow, getProgram, sol, type Escrow } from "../lib/program";
+  import { BOARD_URL } from "../lib/config";
   import { onWalletChange, shortAddress, type AnchorWallet } from "../lib/wallet";
 
   const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
@@ -97,7 +98,6 @@ import Layout from "../layouts/Layout.astro";
     $("#missing").classList.remove("hidden");
   }
 
-  const time = (unix: { toNumber(): number }) => new Date(unix.toNumber() * 1000).toLocaleString("pl-PL");
   const addressLink = (key: web3.PublicKey | null) => {
     if (!key) return document.createTextNode("— oferta jeszcze nie została przyjęta");
     const link = document.createElement("a");
@@ -130,8 +130,8 @@ import Layout from "../layouts/Layout.astro";
     $("#rent").classList.toggle("hidden", !isFreelancer);
     $("#freelancer").replaceChildren(addressLink(escrow.freelancer));
     $("#client").replaceChildren(addressLink(escrow.client));
-    $("#offer").textContent = time(escrow.offerExpiresAt);
-    $("#deadline").textContent = time(escrow.deadline);
+    $("#offer").textContent = dateTime(escrow.offerExpiresAt);
+    $("#deadline").textContent = dateTime(escrow.deadline);
 
     // Milestone'y: opis (tekst od wykonawcy — zawsze przez textContent), kwota i stan.
     $("#tasks").replaceChildren(
@@ -208,7 +208,6 @@ import Layout from "../layouts/Layout.astro";
     if (seconds >= 3600) return `${Math.floor(seconds / 3600)} godz.`;
     return `${Math.max(1, Math.floor(seconds / 60))} min`;
   }
-  const BOARD_URL = import.meta.env.PUBLIC_BOARD_URL ?? "https://ogloszenia.linkdeal.fun";
 
   // Wysyła transakcję, pokazuje wynik i odświeża dane umowy.
   async function execute(button: HTMLButtonElement, run: () => Promise<string>, note = "") {

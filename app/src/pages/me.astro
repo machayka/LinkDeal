@@ -9,7 +9,7 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <script>
-  import { contractStatus, explorerAddress, myContracts, sol } from "../lib/program";
+  import { contractStatus, dateTime, explorerAddress, myContracts, sol } from "../lib/program";
   import { onWalletChange } from "../lib/wallet";
 
   const content = document.querySelector<HTMLElement>("#content")!;
@@ -29,16 +29,18 @@ import Layout from "../layouts/Layout.astro";
         const card = document.createElement("a");
         card.href = `/contract/${publicKey.toBase58()}`;
         card.className = "card bg-base-100 shadow transition hover:shadow-md";
+        const more = account.tasks.length - 1;
         card.innerHTML = `<div class="card-body flex-row items-center justify-between gap-2 py-4">
-          <div>
-            <div class="font-semibold">${sol(account.amount)}</div>
-            <div class="text-xs opacity-60">Milestone'y ${account.approved}/${account.tasks.length} · deadline ${new Date(account.deadline.toNumber() * 1000).toLocaleString("pl-PL")}</div>
+          <div class="min-w-0">
+            <div class="truncate font-semibold"><span class="title"></span>${more ? ` <span class="font-normal opacity-60">+ ${more} więcej</span>` : ""}</div>
+            <div class="text-xs opacity-60">${sol(account.amount)} · milestone'y ${account.approved}/${account.tasks.length} · deadline ${dateTime(account.deadline)}</div>
           </div>
           <div class="flex flex-col items-end gap-1">
             <span class="badge ${statusClass}">${status}</span>
             ${role ? `<span class="badge badge-ghost badge-sm">${role}</span>` : ""}
           </div>
         </div>`;
+        card.querySelector(".title")!.textContent = account.tasks[0].description; // tekst od wykonawcy — jako tekst
         list.append(card);
       });
     return box;
