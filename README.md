@@ -11,7 +11,7 @@ Hackathon Superteam Poland, challenge „Finance Without Intermediaries”.
 1. Strony ustalają warunki poza aplikacją (Discord, OLX, Pracuj.pl).
 2. **Wykonawca** tworzy umowę: kwotę, deadline, ważność oferty i listę milestone'ów. Każdy milestone ma opis i % całej kwoty. Podpisuje ją portfelem i dostaje link do umowy.
 3. **Zleceniodawca** otwiera link, widzi warunki odczytane z blockchaina i klika „Przyjmij ofertę”. Wtedy 100% kwoty trafia na konto umowy.
-4. Wykonawca oddaje pracę milestone po milestonie, poza aplikacją.
+4. Wykonawca oddaje kolejne milestone'y poza aplikacją.
 5. Zleceniodawca klika „Zalicz milestone” i program od razu wypłaca wykonawcy % tego milestone'u.
 6. Po ostatnim milestonie wykonawca dostaje resztę, a konto umowy się zamyka.
 
