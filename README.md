@@ -56,7 +56,7 @@ Cała logika umowy działa w programie on-chain: kto przyjmuje ofertę, kto zali
 ## Pomysły na później
 
 - **Zakończenie umowy za zgodą obu stron:** wcześniejsze rozliczenie, gdy wykonawca i zleceniodawca podpiszą je razem. To nowy mechanizm w programie, celowo pominięty na hackathon.
-- **Czat w ogłoszeniach** z logowaniem portfelem, najlepiej na gotowym rozwiązaniu (zob. [board/VISION.md](board/VISION.md)).
+- **Czat w ogłoszeniach** z logowaniem portfelem, najlepiej na gotowym rozwiązaniu (kandydaci: TalkJS, Solchat; XMTP po dodaniu obsługi Solany).
 
 ## Co gdzie jest
 
