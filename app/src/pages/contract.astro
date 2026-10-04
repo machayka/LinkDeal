@@ -34,7 +34,7 @@ import Layout from "../layouts/Layout.astro";
 
     <div class="card bg-base-100 shadow">
       <div class="card-body">
-        <h2 class="card-title">Taski</h2>
+        <h2 class="card-title">Milestone'y</h2>
         <ul id="tasks" class="list"></ul>
       </div>
     </div>
@@ -111,7 +111,7 @@ import Layout from "../layouts/Layout.astro";
     $("#offer").textContent = time(escrow.offerExpiresAt);
     $("#deadline").textContent = time(escrow.deadline);
 
-    // Taski: opis (tekst od wykonawcy — zawsze przez textContent), %, kwota i stan.
+    // Milestone'y: opis (tekst od wykonawcy — zawsze przez textContent), %, kwota i stan.
     $("#tasks").replaceChildren(
       ...escrow.tasks.map((task, index) => {
         const row = document.createElement("li");
@@ -136,7 +136,7 @@ import Layout from "../layouts/Layout.astro";
         `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my">możesz już zamknąć swoje ogłoszenie →</a>`]);
     if (program && isClient && beforeDeadline) {
       const task = escrow.tasks[escrow.approved];
-      actions.push([`Zalicz Task ${escrow.approved + 1}: ${task.description}`, () =>
+      actions.push([`Zalicz milestone ${escrow.approved + 1}: ${task.description}`, () =>
         program.methods.approveMilestone().accountsPartial({ ...accounts, client: me! }).rpc()]);
     }
     if (program && !funded && !offerValid)

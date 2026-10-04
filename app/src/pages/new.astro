@@ -25,18 +25,18 @@ import Layout from "../layouts/Layout.astro";
 
       <div>
         <div class="mb-2 flex items-center justify-between">
-          <span class="font-semibold">Taski</span>
+          <span class="font-semibold">Milestone'y</span>
           <span id="sum" class="badge"></span>
         </div>
         <div id="tasks" class="flex flex-col gap-2"></div>
-        <button type="button" id="add-task" class="btn btn-ghost btn-sm mt-2">+ Dodaj task</button>
+        <button type="button" id="add-task" class="btn btn-ghost btn-sm mt-2">+ Dodaj milestone</button>
       </div>
 
       <div id="error" class="alert alert-error hidden"></div>
       <button id="submit" class="btn btn-primary">Wyślij ofertę</button>
       <p class="text-xs opacity-60">
         Utworzenie oferty blokuje ok. 0,0065 SOL kaucji za miejsce na blockchainie. Wraca do Ciebie w całości, gdy umowa
-        się zakończy: po zaliczeniu ostatniego taska, po zwrocie reszty po deadlinie albo po anulowaniu wygasłej oferty.
+        się zakończy: po zaliczeniu ostatniego milestone'u, po zwrocie reszty po deadlinie albo po anulowaniu wygasłej oferty.
       </p>
     </div>
   </form>
@@ -56,7 +56,7 @@ import Layout from "../layouts/Layout.astro";
 
   <template id="task-row">
     <div class="flex gap-2">
-      <input name="description" placeholder="Opis taska" maxlength="100" class="input flex-1" />
+      <input name="description" placeholder="Opis milestone'u" maxlength="100" class="input flex-1" />
       <input name="percent" type="number" min="5" max="100" placeholder="%" class="input w-20" />
       <button type="button" class="btn btn-ghost btn-square" title="Usuń">✕</button>
     </div>
@@ -109,11 +109,11 @@ import Layout from "../layouts/Layout.astro";
     if (!(Number(data.get("amount")) > 0)) return "Podaj kwotę zlecenia.";
     if (!(offer > Date.now())) return "Oferta musi być ważna w przyszłości.";
     if (!(deadline >= offer)) return "Deadline nie może być wcześniej niż koniec ważności oferty.";
-    if (list.length < 1 || list.length > MAX_TASKS) return "Umowa musi mieć od 1 do 10 tasków.";
-    if (list.some((task) => !task.description)) return "Każdy task musi mieć opis.";
+    if (list.length < 1 || list.length > MAX_TASKS) return "Umowa musi mieć od 1 do 10 milestone'ów.";
+    if (list.some((task) => !task.description)) return "Każdy milestone musi mieć opis.";
     if (list.some((task) => new TextEncoder().encode(task.description).length > 100))
-      return "Opis taska może mieć maksymalnie 100 bajtów (polskie litery liczą się podwójnie).";
-    if (list.some((task) => task.percent < 5)) return "Każdy task musi mieć co najmniej 5%.";
+      return "Opis milestone'u może mieć maksymalnie 100 bajtów (polskie litery liczą się podwójnie).";
+    if (list.some((task) => task.percent < 5)) return "Każdy milestone musi mieć co najmniej 5%.";
     if (sum !== 100) return `Suma procentów musi wynosić 100 (teraz ${sum}).`;
     return null;
   }

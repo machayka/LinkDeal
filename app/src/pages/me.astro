@@ -31,7 +31,7 @@ import Layout from "../layouts/Layout.astro";
         card.innerHTML = `<div class="card-body flex-row items-center justify-between gap-2 py-4">
           <div>
             <div class="font-semibold">${sol(account.amount)}</div>
-            <div class="text-xs opacity-60">Taski ${account.approved}/${account.tasks.length} · deadline ${new Date(account.deadline.toNumber() * 1000).toLocaleString("pl-PL")}</div>
+            <div class="text-xs opacity-60">Milestone'y ${account.approved}/${account.tasks.length} · deadline ${new Date(account.deadline.toNumber() * 1000).toLocaleString("pl-PL")}</div>
           </div>
           <span class="badge ${statusClass}">${status}</span>
         </div>`;
