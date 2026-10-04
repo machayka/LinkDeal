@@ -16,9 +16,9 @@ const boardUrl = import.meta.env.PUBLIC_BOARD_URL ?? "https://ogloszenia.linkdea
     <nav class="navbar bg-base-100 shadow-sm">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">LinkDeal</a>
+        <a href={boardUrl} class="btn btn-ghost btn-sm">Ogłoszenia ↗</a>
       </div>
       <div class="flex items-center gap-1">
-        <a href={boardUrl} class="btn btn-ghost btn-sm">Ogłoszenia ↗</a>
         <a href="/me" class="btn btn-ghost btn-sm">Moje umowy</a>
         <button id="wallet-button" class="btn btn-primary btn-sm">Połącz portfel</button>
       </div>
