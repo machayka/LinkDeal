@@ -1,0 +1,76 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Moje ogłoszenia">
+  <h1 class="mb-4 text-2xl font-bold">Moje ogłoszenia</h1>
+  <div id="error" class="alert alert-error mb-3 hidden"></div>
+  <div id="offers" class="flex flex-col gap-3"></div>
+</Layout>
+
+<script>
+  import { closeOfferMessage } from "../lib/messages";
+  import { onWalletChange, type ConnectedWallet } from "../lib/wallet";
+
+  const list = document.querySelector<HTMLElement>("#offers")!;
+  const error = document.querySelector<HTMLElement>("#error")!;
+  let wallet: ConnectedWallet | null = null;
+
+  type Offer = { id: number; title: string; budget_sol: string; status: "open" | "closed" };
+
+  // Ogłoszenia podłączonego portfela, z przyciskiem „Zamknij” przy otwartych.
+  async function load() {
+    if (!wallet) {
+      list.innerHTML = `<div class="alert">Połącz portfel, aby zobaczyć swoje ogłoszenia.</div>`;
+      return;
+    }
+    const offers: Offer[] = await (await fetch(`/api/offers?wallet=${wallet.address}`)).json();
+    if (offers.length === 0) {
+      list.innerHTML = `<div class="alert">Nie masz jeszcze ogłoszeń. <a href="/new" class="link">Dodaj pierwsze</a></div>`;
+      return;
+    }
+    list.replaceChildren(
+      ...offers.map((offer) => {
+        const card = document.createElement("div");
+        card.className = "card bg-base-100 shadow";
+        card.innerHTML = `<div class="card-body flex-row items-center justify-between gap-2">
+          <div><a class="link font-semibold"></a><div class="text-sm opacity-60">${offer.budget_sol} SOL</div></div>
+          ${offer.status === "open" ? `<button class="btn btn-sm">Zamknij</button>` : `<span class="badge">zamknięte</span>`}
+        </div>`;
+        const link = card.querySelector("a")!;
+        link.href = `/o/${offer.id}`;
+        link.textContent = offer.title; // tytuł od użytkownika — zawsze jako tekst
+        const button = card.querySelector("button");
+        if (button) button.onclick = () => close(offer.id, button);
+        return card;
+      }),
+    );
+  }
+
+  // Zamknięcie wymaga podpisu wiadomości „zamknij ogłoszenie #id” tym samym portfelem, który je dodał.
+  async function close(id: number, button: HTMLButtonElement) {
+    if (!wallet) return;
+    button.disabled = true;
+    error.classList.add("hidden");
+    try {
+      const timestamp = Date.now();
+      const signature = await wallet.signMessage(closeOfferMessage(id, timestamp));
+      const response = await fetch(`/api/offers/${id}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: wallet.address, timestamp, signature }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      await load();
+    } catch (e) {
+      error.textContent = e instanceof Error ? e.message : String(e);
+      error.classList.remove("hidden");
+      button.disabled = false;
+    }
+  }
+
+  onWalletChange((w) => {
+    wallet = w;
+    load();
+  });
+</script>
