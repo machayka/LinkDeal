@@ -16,7 +16,7 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
     <nav class="navbar bg-base-100 shadow-sm">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">LinkDeal <span class="font-normal opacity-60">ogłoszenia</span></a>
-        <a href={appUrl} class="btn btn-ghost btn-sm">Umowy ↗</a>
+        <a href={appUrl} class="btn btn-ghost btn-sm hidden sm:inline-flex">Umowy ↗</a>
       </div>
       <div class="flex items-center gap-1">
         <a href="/my" class="btn btn-ghost btn-sm">Moje ogłoszenia</a>
@@ -71,7 +71,7 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
         }
         const wallets = availableWallets();
         if (wallets.length === 0) {
-          list.innerHTML = `<li class="text-sm">Nie wykryto portfela. Zainstaluj np. Phantom.</li>`;
+          list.innerHTML = `<li class="text-sm">Nie wykryto portfela. Zainstaluj np. <a href="https://phantom.com/download" target="_blank" class="link inline p-0">Phantom</a> i odśwież stronę.</li>`;
           return;
         }
         for (const wallet of wallets) {

@@ -16,7 +16,7 @@ const { title } = Astro.props;
     <nav class="navbar bg-base-100 shadow-sm">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">LinkDeal</a>
-        <a href={BOARD_URL} class="btn btn-ghost btn-sm">Ogłoszenia ↗</a>
+        <a href={BOARD_URL} class="btn btn-ghost btn-sm hidden sm:inline-flex">Ogłoszenia ↗</a>
       </div>
       <div class="flex items-center gap-1">
         <a href="/me" class="btn btn-ghost btn-sm">Moje umowy</a>
@@ -71,7 +71,7 @@ const { title } = Astro.props;
         }
         const wallets = availableWallets();
         if (wallets.length === 0) {
-          list.innerHTML = `<li class="text-sm">Nie wykryto portfela. Zainstaluj np. Phantom.</li>`;
+          list.innerHTML = `<li class="text-sm">Nie wykryto portfela. Zainstaluj np. <a href="https://phantom.com/download" target="_blank" class="link inline p-0">Phantom</a> i odśwież stronę.</li>`;
           return;
         }
         for (const wallet of wallets) {

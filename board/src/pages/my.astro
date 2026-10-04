@@ -34,22 +34,23 @@ import Layout from "../layouts/Layout.astro";
         const card = document.createElement("div");
         card.className = "card bg-base-100 shadow";
         card.innerHTML = `<div class="card-body flex-row items-center justify-between gap-2">
-          <div><a class="link font-semibold"></a><div class="text-sm opacity-60">${offer.budget_sol} SOL</div></div>
+          <div><a class="link font-semibold"></a><div class="text-sm opacity-60">${Number(offer.budget_sol).toLocaleString("pl-PL", { maximumFractionDigits: 9 })} SOL</div></div>
           ${offer.status === "open" ? `<button class="btn btn-sm">Zamknij</button>` : `<span class="badge">zamknięte</span>`}
         </div>`;
         const link = card.querySelector("a")!;
         link.href = `/o/${offer.id}`;
         link.textContent = offer.title; // tytuł od użytkownika — zawsze jako tekst
         const button = card.querySelector("button");
-        if (button) button.onclick = () => close(offer.id, button);
+        if (button) button.onclick = () => close(offer.id, offer.title, button);
         return card;
       }),
     );
   }
 
   // Zamknięcie wymaga podpisu wiadomości „zamknij ogłoszenie #id” tym samym portfelem, który je dodał.
-  async function close(id: number, button: HTMLButtonElement) {
+  async function close(id: number, title: string, button: HTMLButtonElement) {
     if (!wallet) return;
+    if (!confirm(`Zamknąć ogłoszenie „${title}”? Zniknie z listy i nie da się go ponownie otworzyć.`)) return;
     button.disabled = true;
     error.classList.add("hidden");
     try {
