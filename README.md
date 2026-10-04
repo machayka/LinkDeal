@@ -29,9 +29,9 @@ Przykład: zlecenie 3k, 3 milestone'y po 1k, deadline 1 miesiąc. Milestone 1 zo
 | Akcja | Kto | Kiedy |
 |---|---|---|
 | `create_escrow` — utwórz umowę | wykonawca | 1–10 milestone'ów, każdy ≥5%, suma 100%, oferta wygasa w przyszłości i nie później niż deadline |
-| `fund` — przyjmij ofertę | każdy, kto wpłaci; staje się zleceniodawcą | przed wygaśnięciem oferty, tylko raz |
+| `fund` — przyjmij ofertę | każdy; kto przyjmie ofertę (zamraża kwotę zlecenia), staje się zleceniodawcą | przed wygaśnięciem oferty, tylko raz |
 | `approve_milestone` — zalicz milestone | tylko zleceniodawca | przed deadlinem, milestone'y po kolei |
-| `cancel` — anuluj ofertę | każdy | nikt nie wpłacił, a oferta wygasła; rent wraca do wykonawcy |
+| `cancel` — anuluj ofertę | każdy | oferta wygasła, nie została przyjęta; rent wraca do wykonawcy |
 | `refund_after_deadline` — zwróć resztę | każdy | po deadlinie; reszta do zleceniodawcy, rent do wykonawcy |
 
 Na Solanie nic nie dzieje się samo. Anulowanie i zwrot uruchamia się przyciskiem, który może kliknąć każdy, ale pieniądze trafiają zawsze tylko do stron umowy.
@@ -50,7 +50,7 @@ Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile w
 ## Odpowiedzi na pytania jury
 
 - **Gdzie znika pośrednik?** Rolę pośrednika pełni program on-chain. Trzyma pieniądze i wypłaca je według reguł zapisanych w kodzie.
-- **Co, jeśli strona zniknie?** Jeśli zleceniodawca zniknie, po deadlinie reszta wraca do niego, a wykonawca zachowuje to, co już dostał. Jeśli wykonawca zniknie, zleceniodawca nie zalicza milestone'ów i po deadlinie odzyskuje resztę. Jeśli nikt nie wpłaci, oferta wygasa i można ją anulować.
+- **Co, jeśli strona zniknie?** Jeśli zleceniodawca zniknie, po deadlinie reszta wraca do niego, a wykonawca zachowuje to, co już dostał. Jeśli wykonawca zniknie, zleceniodawca nie zalicza milestone'ów i po deadlinie odzyskuje resztę. Jeśli nikt nie przyjmie oferty, wygasa ona i można ją anulować.
 - **Czy autor może coś zmienić po deployu?** Nie. Ostateczny deploy odbiera uprawnienie do aktualizacji programu (upgrade authority), więc kodu nie da się już zmienić.
 - **Dlaczego blockchain, a nie baza?** Przy bazie danych pieniądze trzyma jej właściciel i trzeba mu ufać. Tutaj trzyma je program, którego reguł nikt nie może zmienić, a każdą transakcję widać w Solana Explorer.
 

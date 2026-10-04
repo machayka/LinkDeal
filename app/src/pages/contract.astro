@@ -80,7 +80,7 @@ import Layout from "../layouts/Layout.astro";
 
   const time = (unix: { toNumber(): number }) => new Date(unix.toNumber() * 1000).toLocaleString("pl-PL");
   const addressLink = (key: web3.PublicKey | null) => {
-    if (!key) return document.createTextNode("— jeszcze nikt nie wpłacił");
+    if (!key) return document.createTextNode("— oferta jeszcze nie została przyjęta");
     const link = document.createElement("a");
     link.href = explorerAddress(key.toBase58());
     link.target = "_blank";

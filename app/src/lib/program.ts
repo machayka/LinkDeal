@@ -46,7 +46,7 @@ export function myContracts(wallet: web3.PublicKey, role: "freelancer" | "client
 // Status umowy do wyświetlenia: [tekst, klasa koloru daisyUI].
 export function contractStatus(escrow: Escrow, now = Date.now() / 1000): [string, string] {
   if (!escrow.client)
-    return now < escrow.offerExpiresAt.toNumber() ? ["Czeka na wpłatę", "badge-info"] : ["Oferta wygasła", "badge-warning"];
+    return now < escrow.offerExpiresAt.toNumber() ? ["Czeka na przyjęcie", "badge-info"] : ["Oferta wygasła", "badge-warning"];
   return now < escrow.deadline.toNumber() ? ["W realizacji", "badge-primary"] : ["Po deadlinie", "badge-warning"];
 }
 

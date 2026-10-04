@@ -3,7 +3,6 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Moje umowy">
-  <h1 class="mb-4 text-2xl font-bold">Moje umowy</h1>
   <div id="content" class="flex flex-col gap-6">
     <div class="alert">Połącz portfel, aby zobaczyć swoje umowy.</div>
   </div>
@@ -15,15 +14,17 @@ import Layout from "../layouts/Layout.astro";
 
   const content = document.querySelector<HTMLElement>("#content")!;
 
-  // Jedna sekcja: nagłówek + karty umów (albo informacja, że nie ma).
-  async function section(title: string, contracts: Awaited<ReturnType<typeof myContracts>>, empty: string) {
+  type Item = Awaited<ReturnType<typeof myContracts>>[number] & { role?: string };
+
+  // Jedna sekcja: nagłówek + karty (albo informacja, że nie ma).
+  function section(title: string, contracts: Item[], empty: string) {
     const box = document.createElement("section");
     box.innerHTML = `<h2 class="mb-2 text-lg font-semibold">${title}</h2><div class="flex flex-col gap-2"></div>`;
     const list = box.querySelector("div")!;
     if (contracts.length === 0) list.innerHTML = `<p class="text-sm opacity-60">${empty}</p>`;
     contracts
       .sort((a, b) => a.account.deadline.toNumber() - b.account.deadline.toNumber())
-      .forEach(({ publicKey, account }) => {
+      .forEach(({ publicKey, account, role }) => {
         const [status, statusClass] = contractStatus(account);
         const card = document.createElement("a");
         card.href = `/contract/${publicKey.toBase58()}`;
@@ -33,7 +34,10 @@ import Layout from "../layouts/Layout.astro";
             <div class="font-semibold">${sol(account.amount)}</div>
             <div class="text-xs opacity-60">Milestone'y ${account.approved}/${account.tasks.length} · deadline ${new Date(account.deadline.toNumber() * 1000).toLocaleString("pl-PL")}</div>
           </div>
-          <span class="badge ${statusClass}">${status}</span>
+          <div class="flex flex-col items-end gap-1">
+            <span class="badge ${statusClass}">${status}</span>
+            ${role ? `<span class="badge badge-ghost badge-sm">${role}</span>` : ""}
+          </div>
         </div>`;
         list.append(card);
       });
@@ -55,9 +59,16 @@ import Layout from "../layouts/Layout.astro";
     history.className = "text-sm opacity-70";
     history.innerHTML = `<a class="link" target="_blank" href="${explorerAddress(wallet.publicKey.toBase58())}">Zakończone umowy znajdziesz w historii portfela w Solana Explorer →</a>`;
 
+    // Oferta = utworzona przeze mnie, jeszcze nieprzyjęta. Umowa = przyjęta (jestem wykonawcą albo zleceniodawcą).
+    const offers = asFreelancer.filter(({ account }) => !account.client);
+    const contracts = [
+      ...asFreelancer.filter(({ account }) => account.client).map((item) => ({ ...item, role: "wykonawca" })),
+      ...asClient.map((item) => ({ ...item, role: "zleceniodawca" })),
+    ];
+
     content.replaceChildren(
-      await section("Jako wykonawca", asFreelancer, "Brak aktywnych ofert. <a href='/new' class='link'>Utwórz ofertę</a>"),
-      await section("Jako zleceniodawca", asClient, "Brak aktywnych umów, w których wpłaciłeś kwotę."),
+      section("Moje oferty", offers, "Brak aktywnych ofert. <a href='/new' class='link'>Utwórz ofertę</a>"),
+      section("Moje umowy", contracts, "Brak aktywnych umów."),
       history,
     );
   });
