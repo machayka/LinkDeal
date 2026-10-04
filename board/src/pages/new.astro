@@ -1,0 +1,76 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Dodaj ogłoszenie">
+  <h1 class="mb-4 text-2xl font-bold">Dodaj ogłoszenie</h1>
+
+  <form id="form" class="card bg-base-100 shadow">
+    <div class="card-body gap-4">
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Tytuł</legend>
+        <input name="title" required maxlength="100" placeholder="np. Logo dla kawiarni" class="input w-full" />
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Opis zlecenia</legend>
+        <textarea name="description" required maxlength="2000" rows="6" class="textarea w-full"></textarea>
+      </fieldset>
+      <fieldset class="fieldset">
+        <legend class="fieldset-legend">Budżet (SOL)</legend>
+        <input name="budget" type="number" min="0.001" step="0.001" required class="input w-full" />
+      </fieldset>
+
+      <div id="error" class="alert alert-error hidden"></div>
+      <button id="submit" class="btn btn-primary">Połącz portfel, aby dodać</button>
+      <p class="text-xs opacity-60">
+        Portfel podpisze treść ogłoszenia — to darmowe potwierdzenie, że jesteś jego autorem, nie transakcja.
+      </p>
+    </div>
+  </form>
+</Layout>
+
+<script>
+  import { addOfferMessage } from "../lib/messages";
+  import { onWalletChange, type ConnectedWallet } from "../lib/wallet";
+
+  const form = document.querySelector<HTMLFormElement>("#form")!;
+  const submit = document.querySelector<HTMLButtonElement>("#submit")!;
+  const error = document.querySelector<HTMLElement>("#error")!;
+  let wallet: ConnectedWallet | null = null;
+
+  onWalletChange((w) => {
+    wallet = w;
+    submit.disabled = !w;
+    submit.textContent = w ? "Podpisz i dodaj ogłoszenie" : "Połącz portfel, aby dodać";
+  });
+
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    if (!wallet) return;
+    const data = new FormData(form);
+    const offer = {
+      title: String(data.get("title")).trim(),
+      description: String(data.get("description")).trim(),
+      budget: String(data.get("budget")),
+    };
+    const timestamp = Date.now();
+
+    submit.disabled = true;
+    error.classList.add("hidden");
+    try {
+      const signature = await wallet.signMessage(addOfferMessage(offer, timestamp));
+      const response = await fetch("/api/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...offer, address: wallet.address, timestamp, signature }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const { id } = await response.json();
+      location.href = `/o/${id}`;
+    } catch (e) {
+      error.textContent = e instanceof Error ? e.message : String(e);
+      error.classList.remove("hidden");
+      submit.disabled = false;
+    }
+  };
+</script>

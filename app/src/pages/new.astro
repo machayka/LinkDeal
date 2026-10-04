@@ -167,5 +167,7 @@ import Layout from "../layouts/Layout.astro";
     (event.currentTarget as HTMLButtonElement).textContent = "Skopiowano ✓";
   };
 
+  // Kwota z linku z ogłoszenia (ogloszenia.linkdeal.fun → „Utwórz umowę”).
+  form.amount.value = new URLSearchParams(location.search).get("amount") ?? "";
   addTaskRow("", "100"); // na start jeden task na całość
 </script>

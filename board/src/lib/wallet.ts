@@ -1,39 +1,36 @@
-// Portfele przez Wallet Standard: każdy zgodny portfel (Phantom, Solflare, Backpack…) sam się tu rejestruje.
+// Portfele przez Wallet Standard (Phantom, Solflare, Backpack…). W ogłoszeniach portfel tylko podpisuje
+// wiadomości — to nasze „logowanie”. Żadnych transakcji ani pieniędzy.
 import { getWallets } from "@wallet-standard/app";
 import type { Wallet } from "@wallet-standard/base";
 import type { StandardConnectFeature } from "@wallet-standard/features";
-import { SolanaSignTransaction, type SolanaSignTransactionFeature } from "@solana/wallet-standard-features";
-import { web3 } from "@anchor-lang/core";
+import { SolanaSignMessage, type SolanaSignMessageFeature } from "@solana/wallet-standard-features";
 
-const CHAIN = "solana:devnet";
 const STORAGE_KEY = "linkdeal:wallet"; // nazwa ostatniego portfela, żeby połączyć się ponownie po przejściu na inną stronę
 
-// Tego kształtu oczekuje Anchor.
-export type AnchorWallet = {
-  publicKey: web3.PublicKey;
-  signTransaction<T extends web3.Transaction | web3.VersionedTransaction>(tx: T): Promise<T>;
-  signAllTransactions<T extends web3.Transaction | web3.VersionedTransaction>(txs: T[]): Promise<T[]>;
+export type ConnectedWallet = {
+  address: string; // adres portfela (base58)
+  signMessage(message: string): Promise<string>; // zwraca podpis w base64
 };
 
-let current: AnchorWallet | null = null;
-const listeners: ((wallet: AnchorWallet | null) => void)[] = [];
+let current: ConnectedWallet | null = null;
+const listeners: ((wallet: ConnectedWallet | null) => void)[] = [];
 
 // Wywołuje `callback` od razu i przy każdej zmianie portfela.
-export function onWalletChange(callback: (wallet: AnchorWallet | null) => void) {
+export function onWalletChange(callback: (wallet: ConnectedWallet | null) => void) {
   listeners.push(callback);
   callback(current);
 }
 
-function setCurrent(wallet: AnchorWallet | null) {
+function setCurrent(wallet: ConnectedWallet | null) {
   current = wallet;
   listeners.forEach((callback) => callback(wallet));
 }
 
-// Portfele, które umieją się połączyć i podpisać transakcję Solany.
+// Portfele, które umieją się połączyć i podpisać wiadomość.
 export function availableWallets(): Wallet[] {
   return getWallets()
     .get()
-    .filter((w) => "standard:connect" in w.features && SolanaSignTransaction in w.features);
+    .filter((w) => "standard:connect" in w.features && SolanaSignMessage in w.features);
 }
 
 export function onWalletsRegistered(callback: () => void) {
@@ -46,25 +43,15 @@ export async function connect(wallet: Wallet, silent = false) {
   const account = accounts[0];
   if (!account) return;
 
-  const { signTransaction } = (wallet.features as SolanaSignTransactionFeature)[SolanaSignTransaction];
-
-  // Anchor daje obiekt transakcji, portfel chce bajty — zamieniamy w obie strony.
-  async function sign<T extends web3.Transaction | web3.VersionedTransaction>(tx: T): Promise<T> {
-    const bytes =
-      tx instanceof web3.VersionedTransaction ? tx.serialize() : tx.serialize({ requireAllSignatures: false });
-    const [{ signedTransaction }] = await signTransaction({ account, transaction: bytes, chain: CHAIN });
-    return (
-      tx instanceof web3.VersionedTransaction
-        ? web3.VersionedTransaction.deserialize(signedTransaction)
-        : web3.Transaction.from(signedTransaction)
-    ) as T;
-  }
+  const { signMessage } = (wallet.features as SolanaSignMessageFeature)[SolanaSignMessage];
 
   localStorage.setItem(STORAGE_KEY, wallet.name);
   setCurrent({
-    publicKey: new web3.PublicKey(account.address),
-    signTransaction: sign,
-    signAllTransactions: (txs) => Promise.all(txs.map(sign)),
+    address: account.address,
+    async signMessage(message) {
+      const [{ signature }] = await signMessage({ account, message: new TextEncoder().encode(message) });
+      return btoa(String.fromCharCode(...signature));
+    },
   });
 }
 
