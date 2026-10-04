@@ -96,11 +96,26 @@ docker exec -it linkdeal bash -lc 'cd board && npm install && npm run dev'
 docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "$RPC_URL"'
 ```
 
+## Deploy (serwer)
+
+Jeden serwer z Dockerem. Caddy serwuje aplikację umów jako statyczne pliki i przekazuje `ogloszenia.linkdeal.fun` do aplikacji ogłoszeń z bazą Postgres (`deploy/docker-compose.yml`). DNS: rekordy A dla `linkdeal.fun`, `www` i `ogloszenia` wskazują na IP serwera.
+
+```bash
+curl -fsSL https://get.docker.com | sh            # Docker (raz)
+git clone https://github.com/machayka/LinkDeal.git
+cd LinkDeal/deploy
+cp .env.example .env && nano .env                 # hasło do bazy + RPC Heliusa
+docker compose up -d --build
+
+# aktualizacja
+git pull && docker compose up -d --build
+```
+
 ## Status
 
 - [x] Program: wszystkie 5 instrukcji, unit testy i testy integracyjne
 - [x] Deploy na devnet
-- [ ] Aplikacja umów (linkdeal.fun)
-- [ ] Serwer: Docker + Caddy
-- [ ] Ogłoszenia (ogloszenia.linkdeal.fun)
+- [x] Aplikacja umów (linkdeal.fun)
+- [x] Serwer: Docker + Caddy (pliki w deploy/)
+- [x] Ogłoszenia (ogloszenia.linkdeal.fun) — czat TODO
 - [ ] Ostateczny deploy z odebranym upgrade authority
