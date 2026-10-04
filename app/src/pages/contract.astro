@@ -111,7 +111,7 @@ import Layout from "../layouts/Layout.astro";
     $("#offer").textContent = time(escrow.offerExpiresAt);
     $("#deadline").textContent = time(escrow.deadline);
 
-    // Milestone'y: opis (tekst od wykonawcy — zawsze przez textContent), %, kwota i stan.
+    // Milestone'y: opis (tekst od wykonawcy — zawsze przez textContent), kwota i stan.
     $("#tasks").replaceChildren(
       ...escrow.tasks.map((task, index) => {
         const row = document.createElement("li");
@@ -119,7 +119,7 @@ import Layout from "../layouts/Layout.astro";
         const done = index < escrow!.approved;
         const next = index === escrow!.approved && funded && beforeDeadline;
         row.innerHTML = `<span class="text-xl">${done ? "✓" : next ? "▶" : "○"}</span>
-          <div><div class="description"></div><div class="text-xs opacity-60">${task.percent}% · ${sol(escrow!.amount.toNumber() * task.percent / 100)}</div></div>
+          <div><div class="description"></div><div class="text-xs opacity-60">${sol(task.amount)}</div></div>
           <span class="badge ${done ? "badge-success" : "badge-ghost"}">${done ? "zaliczony" : next ? "następny" : "oczekuje"}</span>`;
         row.querySelector(".description")!.textContent = task.description;
         return row;

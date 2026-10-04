@@ -120,10 +120,6 @@
           "type": "u64"
         },
         {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
           "name": "tasks",
           "type": {
             "vec": {
@@ -223,60 +219,55 @@
     {
       "code": 6000,
       "name": "ZeroAmount",
-      "msg": "Amount must be greater than zero"
+      "msg": "Milestone amount must be greater than zero"
     },
     {
       "code": 6001,
+      "name": "AmountTooLarge",
+      "msg": "Total amount is too large"
+    },
+    {
+      "code": 6002,
       "name": "BadDates",
       "msg": "Offer must expire in the future and not after the deadline"
     },
     {
-      "code": 6002,
-      "name": "BadTaskCount",
-      "msg": "Contract must have 1 to 10 tasks"
-    },
-    {
       "code": 6003,
-      "name": "TaskTooSmall",
-      "msg": "Each task must be at least 5%"
+      "name": "BadTaskCount",
+      "msg": "Contract must have 1 to 10 milestones"
     },
     {
       "code": 6004,
       "name": "BadDescription",
-      "msg": "Task description must be 1 to 100 bytes"
+      "msg": "Milestone description must be 1 to 100 bytes"
     },
     {
       "code": 6005,
-      "name": "PercentSumNot100",
-      "msg": "Task percentages must sum to 100"
-    },
-    {
-      "code": 6006,
       "name": "AlreadyFunded",
       "msg": "Contract is already funded"
     },
     {
-      "code": 6007,
+      "code": 6006,
       "name": "OfferExpired",
       "msg": "Offer has expired"
     },
     {
-      "code": 6008,
+      "code": 6007,
       "name": "DeadlinePassed",
       "msg": "Deadline has passed"
     },
     {
-      "code": 6009,
+      "code": 6008,
       "name": "NotClient",
       "msg": "Only the client who funded the contract can do this"
     },
     {
-      "code": 6010,
+      "code": 6009,
       "name": "OfferStillValid",
       "msg": "Offer is still valid"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "DeadlineNotPassed",
       "msg": "Deadline has not passed yet"
     }
@@ -336,8 +327,8 @@
             "type": "string"
           },
           {
-            "name": "percent",
-            "type": "u8"
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

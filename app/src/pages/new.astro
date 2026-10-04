@@ -2,34 +2,34 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="Nowa umowa">
-  <h1 class="mb-4 text-2xl font-bold">Nowa umowa</h1>
+<Layout title="Nowa oferta">
+  <h1 class="mb-4 text-2xl font-bold">Twoja oferta dla zleceniodawcy</h1>
 
+  <!-- Walidacja: wbudowana w przeglądarkę (required, min, setCustomValidity) + klasa `validator` z daisyUI,
+       która podświetla pole i pokazuje podpowiedź dopiero po próbie wysłania. -->
   <form id="form" class="card bg-base-100 shadow">
     <div class="card-body gap-4">
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">Kwota zlecenia (SOL)</legend>
-        <input name="amount" type="number" min="0.001" step="0.001" required class="input w-full" />
-      </fieldset>
-
       <div class="grid gap-4 sm:grid-cols-2">
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Oferta ważna do</legend>
-          <input name="offerExpiresAt" type="datetime-local" required class="input w-full" />
+          <input name="offerExpiresAt" type="datetime-local" required class="input validator w-full" />
+          <p class="validator-hint hidden">Oferta musi być ważna w przyszłości.</p>
         </fieldset>
         <fieldset class="fieldset">
           <legend class="fieldset-legend">Deadline zlecenia</legend>
-          <input name="deadline" type="datetime-local" required class="input w-full" />
+          <input name="deadline" type="datetime-local" required class="input validator w-full" />
+          <p class="validator-hint hidden">Deadline nie może być wcześniej niż koniec ważności oferty.</p>
         </fieldset>
       </div>
 
       <div>
-        <div class="mb-2 flex items-center justify-between">
-          <span class="font-semibold">Milestone'y</span>
-          <span id="sum" class="badge"></span>
-        </div>
+        <div class="font-semibold">Milestone'y</div>
+        <p class="mb-2 text-sm opacity-60">Zleceniodawca zalicza je po kolei, a za każdy od razu dostajesz jego kwotę.</p>
         <div id="tasks" class="flex flex-col gap-2"></div>
-        <button type="button" id="add-task" class="btn btn-ghost btn-sm mt-2">+ Dodaj milestone</button>
+        <div class="mt-2 flex items-center justify-between">
+          <button type="button" id="add-task" class="btn btn-ghost btn-sm">+ Dodaj milestone</button>
+          <span id="total" class="text-sm opacity-70"></span>
+        </div>
       </div>
 
       <div id="error" class="alert alert-error hidden"></div>
@@ -41,7 +41,7 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </form>
 
-  <!-- Po utworzeniu umowy: link do wysłania zleceniodawcy -->
+  <!-- Po utworzeniu oferty: link do wysłania zleceniodawcy -->
   <div id="result" class="card bg-base-100 hidden shadow">
     <div class="card-body">
       <h2 class="card-title">Oferta utworzona ✓</h2>
@@ -55,9 +55,19 @@ import Layout from "../layouts/Layout.astro";
   </div>
 
   <template id="task-row">
-    <div class="flex gap-2">
-      <input name="description" placeholder="Opis milestone'u" maxlength="100" class="input flex-1" />
-      <input name="percent" type="number" min="5" max="100" placeholder="%" class="input w-20" />
+    <div class="flex flex-wrap items-start gap-2 sm:flex-nowrap">
+      <span class="number w-5 pt-2.5 text-sm opacity-60"></span>
+      <div class="min-w-0 flex-1">
+        <input name="description" required placeholder="np. Projekt logo" class="input validator w-full" />
+        <p class="validator-hint hidden">Opisz milestone (maks. 100 znaków, polskie litery liczą się podwójnie).</p>
+      </div>
+      <div>
+        <label class="input validator w-36">
+          <input name="amount" type="number" required min="0.000000001" step="any" placeholder="0,1" />
+          <span class="opacity-60">SOL</span>
+        </label>
+        <p class="validator-hint hidden">Podaj kwotę.</p>
+      </div>
       <button type="button" class="btn btn-ghost btn-square" title="Usuń">✕</button>
     </div>
   </template>
@@ -65,24 +75,26 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { BN } from "@anchor-lang/core";
-  import { errorMessage, escrowPda, explorerTx, getProgram, randomNonce } from "../lib/program";
+  import { errorMessage, escrowPda, explorerTx, getProgram, randomNonce, sol } from "../lib/program";
   import { onWalletChange, type AnchorWallet } from "../lib/wallet";
 
   const MAX_TASKS = 10;
+  const MAX_DESCRIPTION_BYTES = 100;
   const form = document.querySelector<HTMLFormElement>("#form")!;
   const tasks = document.querySelector<HTMLElement>("#tasks")!;
-  const sumBadge = document.querySelector<HTMLElement>("#sum")!;
+  const total = document.querySelector<HTMLElement>("#total")!;
   const addTask = document.querySelector<HTMLButtonElement>("#add-task")!;
   const submit = document.querySelector<HTMLButtonElement>("#submit")!;
   const error = document.querySelector<HTMLElement>("#error")!;
   const rowTemplate = document.querySelector<HTMLTemplateElement>("#task-row")!;
+  const offerInput = form.elements.namedItem("offerExpiresAt") as HTMLInputElement;
+  const deadlineInput = form.elements.namedItem("deadline") as HTMLInputElement;
 
   let wallet: AnchorWallet | null = null;
 
-  function addTaskRow(description = "", percent = "") {
+  function addTaskRow(amount = "") {
     const row = rowTemplate.content.firstElementChild!.cloneNode(true) as HTMLElement;
-    row.querySelector<HTMLInputElement>("[name=description]")!.value = description;
-    row.querySelector<HTMLInputElement>("[name=percent]")!.value = percent;
+    row.querySelector<HTMLInputElement>("[name=amount]")!.value = amount;
     row.querySelector("button")!.onclick = () => {
       row.remove();
       update();
@@ -91,43 +103,36 @@ import Layout from "../layouts/Layout.astro";
     update();
   }
 
+  // Milestone'y z formularza: opis i kwota w lamportach (1 SOL = 10^9 lamportów).
   function readTasks() {
     return [...tasks.children].map((row) => ({
       description: row.querySelector<HTMLInputElement>("[name=description]")!.value.trim(),
-      percent: Number(row.querySelector<HTMLInputElement>("[name=percent]")!.value),
+      amount: new BN(Math.round(Number(row.querySelector<HTMLInputElement>("[name=amount]")!.value) * 1e9)),
     }));
   }
 
-  // Te same reguły co w programie — tu tylko po to, żeby od razu pokazać błąd.
-  function validate(): string | null {
-    const data = new FormData(form);
-    const list = readTasks();
-    const sum = list.reduce((total, task) => total + task.percent, 0);
-    const offer = new Date(String(data.get("offerExpiresAt"))).getTime();
-    const deadline = new Date(String(data.get("deadline"))).getTime();
-
-    if (!(Number(data.get("amount")) > 0)) return "Podaj kwotę zlecenia.";
-    if (!(offer > Date.now())) return "Oferta musi być ważna w przyszłości.";
-    if (!(deadline >= offer)) return "Deadline nie może być wcześniej niż koniec ważności oferty.";
-    if (list.length < 1 || list.length > MAX_TASKS) return "Umowa musi mieć od 1 do 10 milestone'ów.";
-    if (list.some((task) => !task.description)) return "Każdy milestone musi mieć opis.";
-    if (list.some((task) => new TextEncoder().encode(task.description).length > 100))
-      return "Opis milestone'u może mieć maksymalnie 100 bajtów (polskie litery liczą się podwójnie).";
-    if (list.some((task) => task.percent < 5)) return "Każdy milestone musi mieć co najmniej 5%.";
-    if (sum !== 100) return `Suma procentów musi wynosić 100 (teraz ${sum}).`;
-    return null;
-  }
-
-  // Odświeża licznik sumy i stan przycisku po każdej zmianie w formularzu.
+  // Po każdej zmianie: numery, suma, przyciski oraz reguły, których przeglądarka nie zna sama
+  // (daty względem siebie, limit opisu w bajtach — tak liczy program).
   function update() {
-    const sum = readTasks().reduce((total, task) => total + task.percent, 0);
-    sumBadge.textContent = `Suma: ${sum}%`;
-    sumBadge.className = `badge ${sum === 100 ? "badge-success" : "badge-error"}`;
-    addTask.disabled = tasks.children.length >= MAX_TASKS;
+    const rows = [...tasks.children];
+    rows.forEach((row, i) => {
+      row.querySelector(".number")!.textContent = `${i + 1}.`;
+      row.querySelector<HTMLButtonElement>("button")!.disabled = rows.length === 1;
+      const description = row.querySelector<HTMLInputElement>("[name=description]")!;
+      const tooLong = new TextEncoder().encode(description.value.trim()).length > MAX_DESCRIPTION_BYTES;
+      description.setCustomValidity(tooLong ? "Za długi opis." : "");
+    });
+    addTask.disabled = rows.length >= MAX_TASKS;
 
-    const problem = wallet ? validate() : "Połącz portfel, aby wysłać ofertę.";
-    submit.disabled = problem !== null;
-    submit.textContent = problem ?? "Wyślij ofertę";
+    const amount = readTasks().reduce((sum, task) => sum.add(task.amount), new BN(0));
+    total.textContent = amount.isZero() ? "" : `Kwota zlecenia: ${sol(amount)}`;
+
+    const offer = new Date(offerInput.value).getTime();
+    offerInput.setCustomValidity(offer > Date.now() ? "" : "Oferta musi być ważna w przyszłości.");
+    deadlineInput.setCustomValidity(new Date(deadlineInput.value).getTime() >= offer ? "" : "Za wczesny deadline.");
+
+    submit.disabled = !wallet;
+    submit.textContent = wallet ? "Wyślij ofertę" : "Połącz portfel, aby wysłać ofertę";
   }
 
   form.oninput = update;
@@ -137,12 +142,11 @@ import Layout from "../layouts/Layout.astro";
     update();
   });
 
+  // Wywoływane tylko, gdy formularz jest poprawny — inaczej przeglądarka wskazuje błędne pola.
   form.onsubmit = async (event) => {
     event.preventDefault();
-    if (!wallet || validate()) return;
-    const data = new FormData(form);
-    const toUnix = (field: string) => new BN(Math.floor(new Date(String(data.get(field))).getTime() / 1000));
-    const lamports = new BN(Math.round(Number(data.get("amount")) * 1e9)); // 1 SOL = 10^9 lamportów
+    if (!wallet) return;
+    const toUnix = (input: HTMLInputElement) => new BN(Math.floor(new Date(input.value).getTime() / 1000));
     const nonce = randomNonce();
 
     submit.disabled = true;
@@ -150,7 +154,7 @@ import Layout from "../layouts/Layout.astro";
     error.classList.add("hidden");
     try {
       const signature = await getProgram(wallet)
-        .methods.createEscrow(nonce, lamports, readTasks(), toUnix("deadline"), toUnix("offerExpiresAt"))
+        .methods.createEscrow(nonce, readTasks(), toUnix(deadlineInput), toUnix(offerInput))
         .accounts({ freelancer: wallet.publicKey })
         .rpc();
 
@@ -171,7 +175,6 @@ import Layout from "../layouts/Layout.astro";
     (event.currentTarget as HTMLButtonElement).textContent = "Skopiowano ✓";
   };
 
-  // Kwota z linku z ogłoszenia (ogloszenia.linkdeal.fun → „Utwórz ofertę”).
-  form.amount.value = new URLSearchParams(location.search).get("amount") ?? "";
-  addTaskRow("", "100"); // na start jeden task na całość
+  // Na start jeden milestone; kwota z linku z ogłoszenia (ogloszenia.linkdeal.fun → „Utwórz ofertę”).
+  addTaskRow(new URLSearchParams(location.search).get("amount") ?? "");
 </script>

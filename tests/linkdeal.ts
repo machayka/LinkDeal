@@ -17,11 +17,13 @@ describe("linkdeal", () => {
   const client = Keypair.generate();
   const stranger = Keypair.generate();
 
-  const AMOUNT = LAMPORTS_PER_SOL / 2;
+  // Kwoty milestone'ów w lamportach; kwota zlecenia to ich suma (0,5 SOL).
+  const MILESTONES = [150_000_000, 150_000_000, 200_000_000];
+  const AMOUNT = MILESTONES.reduce((a, b) => a + b, 0);
   const TASKS = [
-    { description: "Logo design", percent: 30 },
-    { description: "Landing page", percent: 30 },
-    { description: "Deployment", percent: 40 },
+    { description: "Logo design", amount: new BN(MILESTONES[0]) },
+    { description: "Landing page", amount: new BN(MILESTONES[1]) },
+    { description: "Deployment", amount: new BN(MILESTONES[2]) },
   ];
 
   // Czas blockchaina (sysvar Clock), a nie komputera — lokalny Surfpool ma własny zegar.
@@ -56,7 +58,7 @@ describe("linkdeal", () => {
     const nonce = new BN(nextNonce++);
     const t = await now();
     await program.methods
-      .createEscrow(nonce, new BN(AMOUNT), tasks, new BN(t + deadlineIn), new BN(t + offerIn))
+      .createEscrow(nonce, tasks, new BN(t + deadlineIn), new BN(t + offerIn))
       .accounts({ freelancer: freelancer.publicKey })
       .signers([freelancer])
       .rpc();
@@ -107,12 +109,15 @@ describe("linkdeal", () => {
     assert.ok(escrow.freelancer.equals(freelancer.publicKey));
     assert.isNull(escrow.client);
     assert.equal(escrow.amount.toNumber(), AMOUNT);
-    assert.deepEqual(escrow.tasks, TASKS);
+    assert.deepEqual(
+      escrow.tasks.map((task) => [task.description, task.amount.toNumber()]),
+      TASKS.map((task) => [task.description, task.amount.toNumber()]),
+    );
     assert.equal(escrow.approved, 0);
   });
 
-  it("create_escrow rejects percentages not summing to 100", async () => {
-    await expectError(createEscrow([{ description: "Only 90%", percent: 90 }]), "PercentSumNot100");
+  it("create_escrow rejects a milestone with zero amount", async () => {
+    await expectError(createEscrow([{ description: "Free work", amount: new BN(0) }]), "ZeroAmount");
   });
 
   it("fund moves the full amount to the escrow and sets the client", async () => {
@@ -137,15 +142,15 @@ describe("linkdeal", () => {
     await fund(pda);
     const start = await balance(freelancer.publicKey);
 
-    await approve(pda); // 30%
-    assert.equal((await balance(freelancer.publicKey)) - start, AMOUNT * 0.3);
+    await approve(pda); // milestone 1
+    assert.equal((await balance(freelancer.publicKey)) - start, MILESTONES[0]);
 
-    await approve(pda); // 30%
-    assert.equal((await balance(freelancer.publicKey)) - start, AMOUNT * 0.6);
+    await approve(pda); // milestone 2
+    assert.equal((await balance(freelancer.publicKey)) - start, MILESTONES[0] + MILESTONES[1]);
 
-    const leftInEscrow = await balance(pda); // 40% + rent
-    await approve(pda); // ostatni task
-    assert.equal((await balance(freelancer.publicKey)) - start, AMOUNT * 0.6 + leftInEscrow);
+    const leftInEscrow = await balance(pda); // milestone 3 + rent
+    await approve(pda); // ostatni milestone
+    assert.equal((await balance(freelancer.publicKey)) - start, MILESTONES[0] + MILESTONES[1] + leftInEscrow);
     assert.isNull(await connection.getAccountInfo(pda)); // konto umowy zamknięte
   });
 
@@ -178,12 +183,13 @@ describe("linkdeal", () => {
     await expectError(refund(pda), "DeadlineNotPassed");
   });
 
-  // Przykład z dokumentacji: Task 1 zaliczony, reszta wraca do zleceniodawcy po deadlinie.
+  // Przykład z dokumentacji: milestone 1 zaliczony, reszta wraca do zleceniodawcy po deadlinie.
   it("refund_after_deadline returns the unpaid rest to the client", async () => {
     const pda = await createEscrow(TASKS, 2, 4); // deadline za 4 s
     await fund(pda);
-    await approve(pda); // Task 1: 30%
-    const rent = (await balance(pda)) - AMOUNT * 0.7;
+    await approve(pda); // milestone 1
+    const rest = AMOUNT - MILESTONES[0];
+    const rent = (await balance(pda)) - rest;
     const clientStart = await balance(client.publicKey);
     const freelancerStart = await balance(freelancer.publicKey);
 
@@ -191,7 +197,7 @@ describe("linkdeal", () => {
     await expectError(approve(pda), "DeadlinePassed"); // po deadlinie nie da się już zaliczyć
     await refund(pda);
 
-    assert.equal((await balance(client.publicKey)) - clientStart, AMOUNT * 0.7);
+    assert.equal((await balance(client.publicKey)) - clientStart, rest);
     assert.equal((await balance(freelancer.publicKey)) - freelancerStart, rent);
     assert.isNull(await connection.getAccountInfo(pda));
   });

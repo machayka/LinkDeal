@@ -9,10 +9,10 @@ Hackathon Superteam Poland, challenge „Finance Without Intermediaries”.
 ## Jak to działa
 
 1. Strony ustalają warunki poza aplikacją (Discord, OLX, Pracuj.pl).
-2. **Wykonawca** tworzy umowę: kwotę, deadline, ważność oferty i listę milestone'ów. Każdy milestone ma opis i % całej kwoty. Podpisuje ją portfelem i dostaje link do umowy.
-3. **Zleceniodawca** otwiera link, widzi warunki odczytane z blockchaina i klika „Przyjmij ofertę”. Wtedy 100% kwoty trafia na konto umowy.
+2. **Wykonawca** tworzy ofertę: deadline, ważność oferty i listę milestone'ów. Każdy milestone ma opis i kwotę, a kwota zlecenia to ich suma. Podpisuje ofertę portfelem i dostaje link.
+3. **Zleceniodawca** otwiera link, widzi warunki odczytane z blockchaina i klika „Przyjmij ofertę”. Wtedy cała kwota zlecenia trafia na konto umowy i zostaje tam zamrożona.
 4. Wykonawca oddaje kolejne milestone'y poza aplikacją.
-5. Zleceniodawca klika „Zalicz milestone” i program od razu wypłaca wykonawcy % tego milestone'u.
+5. Zleceniodawca klika „Zalicz milestone” i program od razu wypłaca wykonawcy kwotę tego milestone'u.
 6. Po ostatnim milestonie wykonawca dostaje resztę, a konto umowy się zamyka.
 
 ## Dlaczego nie ma sporów
@@ -28,7 +28,7 @@ Przykład: zlecenie 3k, 3 milestone'y po 1k, deadline 1 miesiąc. Milestone 1 zo
 
 | Akcja | Kto | Kiedy |
 |---|---|---|
-| `create_escrow` — utwórz umowę | wykonawca | 1–10 milestone'ów, każdy ≥5%, suma 100%, oferta wygasa w przyszłości i nie później niż deadline |
+| `create_escrow` — utwórz umowę | wykonawca | 1–10 milestone'ów, każdy z opisem i kwotą > 0, oferta wygasa w przyszłości i nie później niż deadline |
 | `fund` — przyjmij ofertę | każdy; kto przyjmie ofertę (zamraża kwotę zlecenia), staje się zleceniodawcą | przed wygaśnięciem oferty, tylko raz |
 | `approve_milestone` — zalicz milestone | tylko zleceniodawca | przed deadlinem, milestone'y po kolei |
 | `cancel` — anuluj ofertę | każdy | oferta wygasła, nie została przyjęta; rent wraca do wykonawcy |

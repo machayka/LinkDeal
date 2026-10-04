@@ -126,10 +126,6 @@ export type Linkdeal = {
           "type": "u64"
         },
         {
-          "name": "amount",
-          "type": "u64"
-        },
-        {
           "name": "tasks",
           "type": {
             "vec": {
@@ -229,60 +225,55 @@ export type Linkdeal = {
     {
       "code": 6000,
       "name": "zeroAmount",
-      "msg": "Amount must be greater than zero"
+      "msg": "Milestone amount must be greater than zero"
     },
     {
       "code": 6001,
+      "name": "amountTooLarge",
+      "msg": "Total amount is too large"
+    },
+    {
+      "code": 6002,
       "name": "badDates",
       "msg": "Offer must expire in the future and not after the deadline"
     },
     {
-      "code": 6002,
-      "name": "badTaskCount",
-      "msg": "Contract must have 1 to 10 tasks"
-    },
-    {
       "code": 6003,
-      "name": "taskTooSmall",
-      "msg": "Each task must be at least 5%"
+      "name": "badTaskCount",
+      "msg": "Contract must have 1 to 10 milestones"
     },
     {
       "code": 6004,
       "name": "badDescription",
-      "msg": "Task description must be 1 to 100 bytes"
+      "msg": "Milestone description must be 1 to 100 bytes"
     },
     {
       "code": 6005,
-      "name": "percentSumNot100",
-      "msg": "Task percentages must sum to 100"
-    },
-    {
-      "code": 6006,
       "name": "alreadyFunded",
       "msg": "Contract is already funded"
     },
     {
-      "code": 6007,
+      "code": 6006,
       "name": "offerExpired",
       "msg": "Offer has expired"
     },
     {
-      "code": 6008,
+      "code": 6007,
       "name": "deadlinePassed",
       "msg": "Deadline has passed"
     },
     {
-      "code": 6009,
+      "code": 6008,
       "name": "notClient",
       "msg": "Only the client who funded the contract can do this"
     },
     {
-      "code": 6010,
+      "code": 6009,
       "name": "offerStillValid",
       "msg": "Offer is still valid"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "deadlineNotPassed",
       "msg": "Deadline has not passed yet"
     }
@@ -342,8 +333,8 @@ export type Linkdeal = {
             "type": "string"
           },
           {
-            "name": "percent",
-            "type": "u8"
+            "name": "amount",
+            "type": "u64"
           }
         ]
       }

@@ -8,23 +8,21 @@ declare_id!("AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S");
 pub mod linkdeal {
     use super::*;
 
-    // Wykonawca tworzy umowę: zapisuje warunki w nowym koncie (PDA).
-    // Pieniędzy jeszcze nie ma — wpłaci je zleceniodawca w `fund`.
+    // Wykonawca tworzy ofertę: zapisuje warunki w nowym koncie (PDA).
+    // Pieniędzy jeszcze nie ma — zleceniodawca wpłaci je, przyjmując ofertę (`fund`).
     pub fn create_escrow(
         ctx: Context<CreateEscrow>,
         _nonce: u64, // tylko do adresu PDA, żeby wykonawca mógł mieć wiele umów
-        amount: u64, // kwota zlecenia w lamportach (1 SOL = 1_000_000_000)
         tasks: Vec<Task>,
         deadline: i64,         // unix timestamp (sekundy)
-        offer_expires_at: i64, // do kiedy zleceniodawca może wpłacić
+        offer_expires_at: i64, // do kiedy zleceniodawca może przyjąć ofertę
     ) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
-        require!(amount > 0, LinkDealError::ZeroAmount);
         require!(
             now < offer_expires_at && offer_expires_at <= deadline,
             LinkDealError::BadDates
         );
-        validate_tasks(&tasks)?;
+        let amount = validate_tasks(&tasks)?; // kwota zlecenia = suma milestone'ów
 
         ctx.accounts.escrow.set_inner(Escrow {
             freelancer: ctx.accounts.freelancer.key(),
@@ -38,8 +36,8 @@ pub mod linkdeal {
         Ok(())
     }
 
-    // Zleceniodawca przyjmuje ofertę: wpłaca 100% kwoty do konta umowy.
-    // Kto wpłaci — ten zostaje zleceniodawcą.
+    // Zleceniodawca przyjmuje ofertę: przelewa całą kwotę zlecenia na konto umowy (zostaje tam zamrożona).
+    // Kto przyjmie ofertę — ten zostaje zleceniodawcą.
     pub fn fund(ctx: Context<Fund>) -> Result<()> {
         let escrow = &ctx.accounts.escrow;
         require!(escrow.client.is_none(), LinkDealError::AlreadyFunded);
@@ -64,8 +62,8 @@ pub mod linkdeal {
         Ok(())
     }
 
-    // Zleceniodawca zalicza kolejny task → program wypłaca jego % wykonawcy.
-    // Ostatni task: wykonawca dostaje całą resztę + rent, konto umowy znika.
+    // Zleceniodawca zalicza kolejny milestone → program wypłaca jego kwotę wykonawcy.
+    // Ostatni milestone: wykonawca dostaje całą resztę + rent, konto umowy znika.
     pub fn approve_milestone(ctx: Context<ApproveMilestone>) -> Result<()> {
         let escrow = &ctx.accounts.escrow;
         require!(
@@ -80,14 +78,14 @@ pub mod linkdeal {
         }
 
         // Konto umowy należy do programu, więc program sam zmienia jego saldo — bez CPI.
-        let payout = task_payout(escrow.amount, escrow.tasks[index].percent);
+        let payout = escrow.tasks[index].amount;
         ctx.accounts.escrow.sub_lamports(payout)?;
         ctx.accounts.freelancer.add_lamports(payout)?;
         ctx.accounts.escrow.approved += 1;
         Ok(())
     }
 
-    // Nikt nie wpłacił, a oferta wygasła → zamykamy konto, rent wraca do wykonawcy.
+    // Oferta wygasła i nie została przyjęta → zamykamy konto, rent wraca do wykonawcy.
     // Może wywołać każdy. Zamknięcie robi Anchor (`close = freelancer` w Cancel).
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         let escrow = &ctx.accounts.escrow;
@@ -118,28 +116,23 @@ pub mod linkdeal {
     }
 }
 
-// Kwota za jeden task. u128, żeby mnożenie nie przepełniło u64.
-pub fn task_payout(amount: u64, percent: u8) -> u64 {
-    (amount as u128 * percent as u128 / 100) as u64
-}
-
-// Reguły tasków w osobnej funkcji, żeby dało się je przetestować bez blockchaina.
-pub fn validate_tasks(tasks: &[Task]) -> Result<()> {
+// Reguły milestone'ów w osobnej funkcji, żeby dało się je przetestować bez blockchaina.
+// Zwraca kwotę zlecenia, czyli sumę kwot milestone'ów.
+pub fn validate_tasks(tasks: &[Task]) -> Result<u64> {
     require!(
         (1..=MAX_TASKS).contains(&tasks.len()),
         LinkDealError::BadTaskCount
     );
-    let mut sum: u32 = 0;
+    let mut sum: u64 = 0;
     for task in tasks {
-        require!(task.percent >= 5, LinkDealError::TaskTooSmall);
+        require!(task.amount > 0, LinkDealError::ZeroAmount);
         require!(
             !task.description.is_empty() && task.description.len() <= MAX_DESCRIPTION,
             LinkDealError::BadDescription
         );
-        sum += task.percent as u32;
+        sum = sum.checked_add(task.amount).ok_or(LinkDealError::AmountTooLarge)?;
     }
-    require!(sum == 100, LinkDealError::PercentSumNot100);
-    Ok(())
+    Ok(sum)
 }
 
 const MAX_TASKS: usize = 10;
@@ -179,7 +172,7 @@ pub struct Fund<'info> {
 
 #[derive(Accounts)]
 pub struct ApproveMilestone<'info> {
-    // Tylko ten, kto wpłacił (client), może zaliczać taski.
+    // Tylko ten, kto przyjął ofertę (client), może zaliczać milestone'y.
     pub client: Signer<'info>,
 
     // mut, bo dostaje wypłatę. Nie musi podpisywać — pieniądze tylko przychodzą.
@@ -227,11 +220,11 @@ pub struct RefundAfterDeadline<'info> {
 #[derive(InitSpace)]
 pub struct Escrow {
     pub freelancer: Pubkey,
-    pub client: Option<Pubkey>, // None = jeszcze nikt nie wpłacił
-    pub amount: u64,
+    pub client: Option<Pubkey>, // None = oferta jeszcze nieprzyjęta
+    pub amount: u64, // kwota zlecenia = suma milestone'ów
     #[max_len(MAX_TASKS)]
     pub tasks: Vec<Task>,
-    pub approved: u8, // ile tasków zaliczono (po kolei)
+    pub approved: u8, // ile milestone'ów zaliczono (po kolei)
     pub deadline: i64,
     pub offer_expires_at: i64,
 }
@@ -240,23 +233,21 @@ pub struct Escrow {
 pub struct Task {
     #[max_len(MAX_DESCRIPTION)]
     pub description: String,
-    pub percent: u8, // % kwoty zlecenia
+    pub amount: u64, // kwota milestone'u w lamportach (1 SOL = 1_000_000_000)
 }
 
 #[error_code]
 pub enum LinkDealError {
-    #[msg("Amount must be greater than zero")]
+    #[msg("Milestone amount must be greater than zero")]
     ZeroAmount,
+    #[msg("Total amount is too large")]
+    AmountTooLarge,
     #[msg("Offer must expire in the future and not after the deadline")]
     BadDates,
-    #[msg("Contract must have 1 to 10 tasks")]
+    #[msg("Contract must have 1 to 10 milestones")]
     BadTaskCount,
-    #[msg("Each task must be at least 5%")]
-    TaskTooSmall,
-    #[msg("Task description must be 1 to 100 bytes")]
+    #[msg("Milestone description must be 1 to 100 bytes")]
     BadDescription,
-    #[msg("Task percentages must sum to 100")]
-    PercentSumNot100,
     #[msg("Contract is already funded")]
     AlreadyFunded,
     #[msg("Offer has expired")]
@@ -275,46 +266,37 @@ pub enum LinkDealError {
 mod tests {
     use super::*;
 
-    fn task(percent: u8) -> Task {
-        Task { description: "Logo design".into(), percent }
+    fn task(amount: u64) -> Task {
+        Task { description: "Logo design".into(), amount }
     }
 
     #[test]
-    fn valid_tasks() {
-        assert!(validate_tasks(&[task(30), task(30), task(40)]).is_ok());
-        assert!(validate_tasks(&[task(100)]).is_ok());
+    fn total_is_sum_of_milestones() {
+        assert_eq!(validate_tasks(&[task(100), task(250), task(650)]).unwrap(), 1000);
+        assert_eq!(validate_tasks(&[task(1)]).unwrap(), 1);
     }
 
     #[test]
-    fn sum_not_100() {
-        assert!(validate_tasks(&[task(50), task(40)]).is_err());
-        assert!(validate_tasks(&[task(60), task(50)]).is_err());
+    fn zero_amount() {
+        assert!(validate_tasks(&[task(100), task(0)]).is_err());
     }
 
     #[test]
-    fn task_below_5_percent() {
-        assert!(validate_tasks(&[task(4), task(96)]).is_err());
+    fn total_overflow() {
+        assert!(validate_tasks(&[task(u64::MAX), task(1)]).is_err());
     }
 
     #[test]
     fn bad_task_count() {
         assert!(validate_tasks(&[]).is_err());
-        assert!(validate_tasks(&vec![task(5); 11]).is_err()); // 11 tasków — za dużo
-        assert!(validate_tasks(&vec![task(10); 10]).is_ok()); // 10 tasków — maksimum
-    }
-
-    #[test]
-    fn payout_is_percent_of_amount() {
-        assert_eq!(task_payout(3_000_000_000, 33), 990_000_000);
-        assert_eq!(task_payout(100, 5), 5);
-        assert_eq!(task_payout(10, 33), 3); // zaokrąglenie w dół — resztę dostanie ostatni task
-        assert_eq!(task_payout(u64::MAX, 100), u64::MAX); // brak przepełnienia
+        assert!(validate_tasks(&vec![task(1); 11]).is_err()); // 11 milestone'ów — za dużo
+        assert!(validate_tasks(&vec![task(1); 10]).is_ok()); // 10 — maksimum
     }
 
     #[test]
     fn bad_description() {
-        let empty = Task { description: "".into(), percent: 100 };
-        let too_long = Task { description: "a".repeat(101), percent: 100 };
+        let empty = Task { description: "".into(), amount: 100 };
+        let too_long = Task { description: "a".repeat(101), amount: 100 };
         assert!(validate_tasks(&[empty]).is_err());
         assert!(validate_tasks(&[too_long]).is_err());
     }
