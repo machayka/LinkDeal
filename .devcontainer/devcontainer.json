@@ -9,6 +9,10 @@
 
   "remoteUser": "root",
 
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
+
   "remoteEnv": {
     "LIVE_ROOT": "${containerWorkspaceFolder}"
   },
@@ -19,7 +23,7 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  "forwardPorts": [8899, 4321],
+  "forwardPorts": [8899, 4321, 4322, 5432, 8787],
   "portsAttributes": {
     "8899": { "label": "Surfpool RPC", "onAutoForward": "silent" }
   },

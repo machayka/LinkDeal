@@ -42,10 +42,33 @@ Cała logika umowy działa w programie on-chain: kto wpłaca, kto zalicza, ile w
 
 - **linkdeal.fun** to aplikacja umów: same statyczne pliki, bez serwera aplikacji i bez bazy.
 - **ogloszenia.linkdeal.fun** to ogłoszenia: osobna aplikacja z własną bazą Postgres.
+- **chat** to osobny serwis WebSocket w Dockerze, zapisujący wiadomości i pliki w tym samym Postgresie.
 
 - Backend nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji.
+- Chat nie trzyma pieniędzy i nie wykonuje operacji escrow. Wallet podpisuje jednorazowy challenge, a serwer weryfikuje podpis przed otwarciem pokoju.
 - Frontend czyta umowę prosto z blockchaina, a transakcje podpisuje portfel użytkownika.
 - Nawet jeśli serwer przestanie działać, każdą umowę da się dokończyć bezpośrednio przez program, np. z innego frontu albo z CLI.
+
+### Chat i pliki
+
+Panel chatu jest wysuwanym panelem dostępnym na stronach ogłoszeń oraz umów.
+Pokój ogłoszenia ma klucz `offer:<id>`, a pokój strony umowy
+`contract:<adres-escrow>`. Wiadomości są przesyłane realtime przez WebSocket,
+ale po zapisaniu pozostają w PostgreSQL.
+
+Załączniki są przechowywane w PostgreSQL jako `bytea` i mają limit 10 MB.
+Wiadomość nie jest zapisywana, jeśli plik przekracza limit albo jego rozmiar
+nie zgadza się z przesłaną zawartością. Schemat tabel znajduje się w
+[`board/db/schema.sql`](./board/db/schema.sql).
+
+Serwer chatu:
+
+- działa jako osobny kontener `chat`,
+- korzysta z `DATABASE_URL` tego samego Postgresa co `board`,
+- wystawia tylko wewnętrzny port WebSocket `8787`,
+- jest publikowany przez Caddy pod `/chat/ws`,
+- przechowuje historię wiadomości i załączniki w bazie,
+- nie jest źródłem prawdy dla pieniędzy, tasków ani deadline'ów.
 
 ## Odpowiedzi na pytania jury
 
@@ -61,6 +84,7 @@ programs/linkdeal/src/lib.rs   cały program: instrukcje, konto umowy, błędy, 
 tests/linkdeal.ts              testy integracyjne na lokalnym blockchainie
 app/                           aplikacja umów (Astro + daisyUI, statyczna, bez backendu) → linkdeal.fun
 board/                         ogłoszenia (Astro + API + Postgres) → ogloszenia.linkdeal.fun
+chat/                          serwer WebSocket + zapis wiadomości/plików w Postgresie
 deploy/                        serwer: docker-compose.yml + Caddyfile
 Dockerfile, .devcontainer/     środowisko: Anchor 1.1.2, Rust 1.95, Node 24, Surfpool
 ```
@@ -74,7 +98,7 @@ docker build --platform linux/amd64 --target toolchain -t linkdeal-dev .
 docker run -d --name linkdeal --platform linux/amd64 \
   -v "$PWD":/workspaces/LinkDeal -w /workspaces/LinkDeal \
   -v linkdeal-solana:/root/.config/solana \
-  -p 8899:8899 -p 4321:4321 -p 4322:4322 \
+  -p 8899:8899 -p 4321:4321 -p 4322:4322 -p 8787:8787 \
   linkdeal-dev sleep infinity
 
 docker exec linkdeal npm install
@@ -92,19 +116,22 @@ docker run -d --name linkdeal-db --network linkdeal-net \
 docker network connect linkdeal-net linkdeal
 docker exec -it linkdeal bash -lc 'cd board && npm install && npm run dev'
 
+# lokalny chat relay (w osobnym terminalu kontenera)
+docker exec -it linkdeal bash -lc 'cd chat && npm install && npm start'
+
 # deploy na devnet (RPC w .env, wzór w .env.example)
 docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "$RPC_URL"'
 ```
 
 ## Deploy (serwer)
 
-Jeden serwer z Dockerem. Caddy serwuje aplikację umów jako statyczne pliki i przekazuje `ogloszenia.linkdeal.fun` do aplikacji ogłoszeń z bazą Postgres (`deploy/docker-compose.yml`). DNS: rekordy A dla `linkdeal.fun`, `www` i `ogloszenia` wskazują na IP serwera.
+Jeden serwer z Dockerem. Caddy serwuje aplikację umów jako statyczne pliki i przekazuje `ogloszenia.linkdeal.fun` do aplikacji ogłoszeń oraz WebSocket chatu (`deploy/docker-compose.yml`). DNS: rekordy A dla `linkdeal.fun`, `www` i `ogloszenia` wskazują na IP serwera.
 
 ```bash
 curl -fsSL https://get.docker.com | sh            # Docker (raz)
 git clone https://github.com/machayka/LinkDeal.git
 cd LinkDeal/deploy
-cp .env.example .env && nano .env                 # hasło do bazy + RPC Heliusa
+cp .env.example .env && nano .env                 # hasło, RPC i PUBLIC_CHAT_URL
 docker compose up -d --build
 
 # aktualizacja
@@ -117,5 +144,5 @@ git pull && docker compose up -d --build
 - [x] Deploy na devnet
 - [x] Aplikacja umów (linkdeal.fun)
 - [x] Serwer: Docker + Caddy (pliki w deploy/)
-- [x] Ogłoszenia (ogloszenia.linkdeal.fun) — czat TODO
+- [x] Ogłoszenia (ogloszenia.linkdeal.fun) + trwały chat i załączniki w Postgresie
 - [ ] Ostateczny deploy z odebranym upgrade authority

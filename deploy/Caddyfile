@@ -13,5 +13,7 @@ www.linkdeal.fun {
 
 # Ogłoszenia: aplikacja Node z bazą (kontener board).
 ogloszenia.linkdeal.fun {
+	@chat path /chat/ws
+	reverse_proxy @chat chat:8787
 	reverse_proxy board:4321
 }

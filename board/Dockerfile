@@ -7,6 +7,8 @@ COPY board/ ./
 # Adres aplikacji umów dla przycisku „Utwórz umowę” — wpisywany przy budowaniu.
 ARG PUBLIC_APP_URL
 ENV PUBLIC_APP_URL=$PUBLIC_APP_URL
+ARG PUBLIC_CHAT_URL
+ENV PUBLIC_CHAT_URL=$PUBLIC_CHAT_URL
 RUN npm run build
 
 FROM node:24-alpine

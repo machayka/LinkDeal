@@ -14,6 +14,7 @@ const readOnlyWallet: AnchorWallet = {
   publicKey: web3.PublicKey.default,
   signTransaction: () => Promise.reject(new Error("Connect a wallet first")),
   signAllTransactions: () => Promise.reject(new Error("Connect a wallet first")),
+  signMessage: () => Promise.reject(new Error("Connect a wallet first")),
 };
 
 export function getProgram(wallet: AnchorWallet | null) {

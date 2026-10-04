@@ -2,7 +2,12 @@
 import { getWallets } from "@wallet-standard/app";
 import type { Wallet } from "@wallet-standard/base";
 import type { StandardConnectFeature } from "@wallet-standard/features";
-import { SolanaSignTransaction, type SolanaSignTransactionFeature } from "@solana/wallet-standard-features";
+import {
+  SolanaSignMessage,
+  SolanaSignTransaction,
+  type SolanaSignMessageFeature,
+  type SolanaSignTransactionFeature,
+} from "@solana/wallet-standard-features";
 import { web3 } from "@anchor-lang/core";
 
 const CHAIN = "solana:devnet";
@@ -13,6 +18,7 @@ export type AnchorWallet = {
   publicKey: web3.PublicKey;
   signTransaction<T extends web3.Transaction | web3.VersionedTransaction>(tx: T): Promise<T>;
   signAllTransactions<T extends web3.Transaction | web3.VersionedTransaction>(txs: T[]): Promise<T[]>;
+  signMessage(message: string): Promise<string>;
 };
 
 let current: AnchorWallet | null = null;
@@ -47,6 +53,7 @@ export async function connect(wallet: Wallet, silent = false) {
   if (!account) return;
 
   const { signTransaction } = (wallet.features as SolanaSignTransactionFeature)[SolanaSignTransaction];
+  const signMessage = (wallet.features as Partial<SolanaSignMessageFeature>)[SolanaSignMessage]?.signMessage;
 
   // Anchor daje obiekt transakcji, portfel chce bajty — zamieniamy w obie strony.
   async function sign<T extends web3.Transaction | web3.VersionedTransaction>(tx: T): Promise<T> {
@@ -65,6 +72,11 @@ export async function connect(wallet: Wallet, silent = false) {
     publicKey: new web3.PublicKey(account.address),
     signTransaction: sign,
     signAllTransactions: (txs) => Promise.all(txs.map(sign)),
+    async signMessage(message) {
+      if (!signMessage) throw new Error("This wallet does not support message signing");
+      const [{ signature }] = await signMessage({ account, message: new TextEncoder().encode(message) });
+      return btoa(String.fromCharCode(...signature));
+    },
   });
 }
 

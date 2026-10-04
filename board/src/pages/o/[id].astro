@@ -27,7 +27,7 @@ const author = offer && `${offer.client_wallet.slice(0, 4)}…${offer.client_wal
             Dodane {offer.created_at.toLocaleDateString("pl-PL")} przez <span class="font-mono">{author}</span>
           </p>
           <div class="card-actions">
-            <button class="btn" disabled>Napisz (czat wkrótce)</button>
+            <button id="offer-chat" data-chat-author={offer.client_wallet} data-offer-id={offer.id} class="btn btn-secondary">Otwórz chat</button>
             <a href={contractUrl} class="btn btn-primary">Utwórz umowę</a>
           </div>
         </div>
@@ -35,3 +35,19 @@ const author = offer && `${offer.client_wallet.slice(0, 4)}…${offer.client_wal
     )
   }
 </Layout>
+
+<script>
+import { onWalletChange, type ConnectedWallet } from "../../lib/wallet";
+const offerChat = document.querySelector<HTMLButtonElement>("#offer-chat");
+onWalletChange((wallet: ConnectedWallet | null) => {
+  const own = wallet?.address === offerChat?.dataset.chatAuthor;
+  if (offerChat) {
+    offerChat.disabled = Boolean(own);
+    offerChat.textContent = own ? "To Twoje ogłoszenie" : "Otwórz chat";
+  }
+});
+offerChat?.addEventListener("click", () => {
+  if (!offerChat.disabled) document.querySelector<HTMLButtonElement>("#chat-toggle")?.click();
+});
+if (location.hash === "#chat" && !offerChat?.disabled) offerChat?.click();
+</script>
