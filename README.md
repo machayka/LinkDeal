@@ -88,5 +88,4 @@ Ogłoszenia wymagają jeszcze Postgresa. Konfiguracja jest w [`board/.env.exampl
 | **Gdzie znika pośrednik?** | Pieniądze trzyma i wypłaca program on-chain, a nie platforma. |
 | **Co, jeśli strona zniknie?** | Wykonawca zachowuje to, co dostał. Po deadlinie reszta wraca do zleceniodawcy. |
 | **Kto ma jakie uprawnienia?** | Zalicza tylko zleceniodawca. Pieniądze wychodzą tylko do stron umowy. |
-| **Czy autor może coś zmienić?** | Po odebraniu upgrade authority (`--final`) już nie. Stan widać w Explorerze. |
 | **Dlaczego blockchain, a nie baza?** | Bazie trzeba ufać. Reguł programu nikt nie zmieni, a każdą transakcję widać publicznie. |
