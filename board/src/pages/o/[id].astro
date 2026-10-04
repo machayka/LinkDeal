@@ -24,7 +24,7 @@ const budget = offer && Number(offer.budget_sol).toLocaleString("pl-PL", { maxim
             <p class="text-xs opacity-60">Dodane {offer.created_at.toLocaleDateString("pl-PL")}</p>
           </div>
           <p>
-            Budżet: <span class="text-lg font-semibold">{budget} SOL</span>
+            Budżet: <span class="text-lg font-semibold">{budget} SOL</span>{" "}
             <span class="text-sm opacity-60">(orientacyjny)</span>
           </p>
           {offer.status === "closed" && <div class="alert alert-warning">Ogłoszenie zamknięte.</div>}
