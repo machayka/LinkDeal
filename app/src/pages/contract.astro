@@ -165,7 +165,7 @@ import Layout from "../layouts/Layout.astro";
   // Wysyła transakcję, pokazuje wynik i odświeża dane umowy.
   async function execute(button: HTMLButtonElement, run: () => Promise<string>, note = "") {
     busy = true;
-    render();
+    $("#actions").querySelectorAll("button").forEach((other) => (other.disabled = true));
     button.innerHTML = `<span class="loading loading-spinner"></span> Podpisz w portfelu…`;
     const message = $("#message");
     try {

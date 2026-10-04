@@ -65,10 +65,29 @@ export const explorerTx = (signature: string) => `https://explorer.solana.com/tx
 export const explorerAddress = (address: string) =>
   `https://explorer.solana.com/address/${address}?cluster=devnet`;
 
+// Błędy programu (nazwy z LinkDealError w lib.rs) po polsku.
+const PROGRAM_ERRORS: Record<string, string> = {
+  ZeroAmount: "Każdy milestone musi mieć kwotę większą od zera.",
+  AmountTooLarge: "Kwota zlecenia jest za duża.",
+  BadDates: "Oferta musi być ważna w przyszłości i wygasać nie później niż deadline.",
+  BadTaskCount: "Oferta musi mieć od 1 do 10 milestone'ów.",
+  BadDescription: "Opis milestone'u musi mieć od 1 do 100 znaków.",
+  AlreadyFunded: "Ta oferta została już przyjęta.",
+  OfferExpired: "Oferta wygasła i nie można jej już przyjąć.",
+  DeadlinePassed: "Deadline minął, więc nie można już zaliczać milestone'ów.",
+  NotClient: "Tylko zleceniodawca może to zrobić.",
+  OfferStillValid: "Ofertę można anulować dopiero po jej wygaśnięciu.",
+  DeadlineNotPassed: "Deadline jeszcze nie minął.",
+};
+
 // Zamienia techniczne błędy na komunikat dla człowieka.
 export function errorMessage(e: unknown) {
   const message = e instanceof Error ? e.message : String(e);
+  const code = Object.keys(PROGRAM_ERRORS).find((name) => message.includes(`Error Code: ${name}`));
+  if (code) return PROGRAM_ERRORS[code];
   if (message.includes("Blockhash not found"))
     return "Transakcja wygasła, zanim została zatwierdzona w portfelu (na devnecie jest ważna ok. 30 s). Spróbuj ponownie.";
+  if (/rejected/i.test(message)) return "Anulowano podpisywanie w portfelu.";
+  if (/insufficient|no record of a prior credit/i.test(message)) return "Masz za mało SOL w portfelu.";
   return message;
 }
