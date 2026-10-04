@@ -1,0 +1,185 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Umowa">
+  <div id="loading" class="flex justify-center p-10"><span class="loading loading-spinner loading-lg"></span></div>
+
+  <div id="missing" class="alert hidden">
+    <span>Umowa zakończona albo nie istnieje. <a id="history" target="_blank" class="link">Historia w Solana Explorer</a></span>
+  </div>
+
+  <div id="contract" class="flex hidden flex-col gap-4">
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <h1 class="text-sm opacity-60">Umowa</h1>
+            <p id="amount" class="text-3xl font-bold"></p>
+          </div>
+          <span id="status" class="badge badge-lg"></span>
+        </div>
+        <p id="role" class="font-semibold"></p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt class="opacity-60">Wykonawca</dt><dd id="freelancer"></dd>
+          <dt class="opacity-60">Zleceniodawca</dt><dd id="client"></dd>
+          <dt class="opacity-60">Oferta ważna do</dt><dd id="offer"></dd>
+          <dt class="opacity-60">Deadline</dt><dd id="deadline"></dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow">
+      <div class="card-body">
+        <h2 class="card-title">Taski</h2>
+        <ul id="tasks" class="list"></ul>
+      </div>
+    </div>
+
+    <div id="actions" class="flex flex-col gap-2"></div>
+    <div id="message" class="alert hidden"></div>
+  </div>
+</Layout>
+
+<script>
+  import { web3 } from "@anchor-lang/core";
+  import { errorMessage, explorerAddress, explorerTx, fetchEscrow, getProgram, sol, type Escrow } from "../lib/program";
+  import { onWalletChange, shortAddress, type AnchorWallet } from "../lib/wallet";
+
+  const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
+  const addressText = location.pathname.split("/")[2] ?? "";
+
+  let wallet: AnchorWallet | null = null;
+  let escrow: Escrow | null = null;
+  let busy = false;
+
+  // Adres z linku → konto umowy z blockchaina.
+  async function load() {
+    let address: web3.PublicKey;
+    try {
+      address = new web3.PublicKey(addressText);
+    } catch {
+      return showMissing();
+    }
+    escrow = await fetchEscrow(address);
+    $("#loading").classList.add("hidden");
+    if (!escrow) return showMissing();
+    $("#contract").classList.remove("hidden");
+    render();
+  }
+
+  function showMissing() {
+    $("#loading").classList.add("hidden");
+    $("#contract").classList.add("hidden");
+    $<HTMLAnchorElement>("#history").href = explorerAddress(addressText);
+    $("#missing").classList.remove("hidden");
+  }
+
+  const time = (unix: { toNumber(): number }) => new Date(unix.toNumber() * 1000).toLocaleString("pl-PL");
+  const addressLink = (key: web3.PublicKey | null) => {
+    if (!key) return document.createTextNode("— jeszcze nikt nie wpłacił");
+    const link = document.createElement("a");
+    link.href = explorerAddress(key.toBase58());
+    link.target = "_blank";
+    link.className = "link font-mono";
+    link.textContent = shortAddress(key.toBase58());
+    return link;
+  };
+
+  function render() {
+    if (!escrow) return;
+    const now = Date.now() / 1000;
+    const funded = escrow.client !== null;
+    const offerValid = now < escrow.offerExpiresAt.toNumber();
+    const beforeDeadline = now < escrow.deadline.toNumber();
+    const me = wallet?.publicKey;
+    const isFreelancer = !!me && me.equals(escrow.freelancer);
+    const isClient = !!me && !!escrow.client && me.equals(escrow.client);
+
+    // Nagłówek
+    const [statusText, statusClass] = !funded
+      ? offerValid ? ["Czeka na wpłatę", "badge-info"] : ["Oferta wygasła", "badge-warning"]
+      : beforeDeadline ? ["W realizacji", "badge-primary"] : ["Po deadlinie", "badge-warning"];
+    $("#status").textContent = statusText;
+    $("#status").className = `badge badge-lg ${statusClass}`;
+    $("#amount").textContent = sol(escrow.amount);
+    $("#role").textContent = isFreelancer ? "Jesteś wykonawcą" : isClient ? "Jesteś zleceniodawcą" : "";
+    $("#freelancer").replaceChildren(addressLink(escrow.freelancer));
+    $("#client").replaceChildren(addressLink(escrow.client));
+    $("#offer").textContent = time(escrow.offerExpiresAt);
+    $("#deadline").textContent = time(escrow.deadline);
+
+    // Taski: opis (tekst od wykonawcy — zawsze przez textContent), %, kwota i stan.
+    $("#tasks").replaceChildren(
+      ...escrow.tasks.map((task, index) => {
+        const row = document.createElement("li");
+        row.className = "list-row items-center";
+        const done = index < escrow!.approved;
+        const next = index === escrow!.approved && funded && beforeDeadline;
+        row.innerHTML = `<span class="text-xl">${done ? "✓" : next ? "▶" : "○"}</span>
+          <div><div class="description"></div><div class="text-xs opacity-60">${task.percent}% · ${sol(escrow!.amount.toNumber() * task.percent / 100)}</div></div>
+          <span class="badge ${done ? "badge-success" : "badge-ghost"}">${done ? "zaliczony" : next ? "następny" : "oczekuje"}</span>`;
+        row.querySelector(".description")!.textContent = task.description;
+        return row;
+      }),
+    );
+
+    // Przyciski: tylko te akcje, które program w tej chwili przyjmie.
+    const actions: [string, () => Promise<string>][] = [];
+    const program = wallet && getProgram(wallet);
+    const accounts = { escrow: escrowAddress(), freelancer: escrow.freelancer };
+    if (program && !funded && offerValid && !isFreelancer)
+      actions.push([`Przyjmij ofertę (wpłać ${sol(escrow.amount)})`, () =>
+        program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc()]);
+    if (program && isClient && beforeDeadline) {
+      const task = escrow.tasks[escrow.approved];
+      actions.push([`Zalicz Task ${escrow.approved + 1}: ${task.description}`, () =>
+        program.methods.approveMilestone().accountsPartial({ ...accounts, client: me! }).rpc()]);
+    }
+    if (program && !funded && !offerValid)
+      actions.push(["Anuluj ofertę (rent wraca do wykonawcy)", () =>
+        program.methods.cancel().accountsPartial(accounts).rpc()]);
+    if (program && funded && !beforeDeadline)
+      actions.push(["Zwróć resztę zleceniodawcy", () =>
+        program.methods.refundAfterDeadline().accountsPartial({ ...accounts, client: escrow!.client! }).rpc()]);
+
+    $("#actions").replaceChildren(
+      ...actions.map(([label, run]) => {
+        const button = document.createElement("button");
+        button.className = "btn btn-primary";
+        button.textContent = label;
+        button.disabled = busy;
+        button.onclick = () => execute(button, run);
+        return button;
+      }),
+    );
+    if (!wallet && (offerValid || funded)) $("#actions").innerHTML = `<p class="text-sm opacity-60">Połącz portfel, aby wykonać akcję.</p>`;
+  }
+
+  const escrowAddress = () => new web3.PublicKey(addressText);
+
+  // Wysyła transakcję, pokazuje wynik i odświeża dane umowy.
+  async function execute(button: HTMLButtonElement, run: () => Promise<string>) {
+    busy = true;
+    render();
+    button.innerHTML = `<span class="loading loading-spinner"></span> Podpisz w portfelu…`;
+    const message = $("#message");
+    try {
+      const signature = await run();
+      message.className = "alert alert-success";
+      message.innerHTML = `<span>Gotowe ✓ <a target="_blank" class="link" href="${explorerTx(signature)}">Transakcja w Solana Explorer</a></span>`;
+    } catch (e) {
+      message.className = "alert alert-error";
+      message.textContent = errorMessage(e);
+    }
+    busy = false;
+    await load();
+  }
+
+  onWalletChange((w) => {
+    wallet = w;
+    render();
+  });
+  setInterval(render, 15_000); // status i przyciski zmieniają się z upływem czasu (oferta, deadline)
+  load();
+</script>

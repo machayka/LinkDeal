@@ -29,6 +29,13 @@ export function escrowPda(freelancer: web3.PublicKey, nonce: BN) {
   )[0];
 }
 
+// Dane umowy z blockchaina; null, gdy konto nie istnieje (np. umowa już zamknięta).
+export const fetchEscrow = (address: web3.PublicKey) => getProgram(null).account.escrow.fetchNullable(address);
+export type Escrow = NonNullable<Awaited<ReturnType<typeof fetchEscrow>>>;
+
+export const sol = (lamports: BN | number) =>
+  `${(Number(lamports) / 1e9).toLocaleString("pl-PL", { maximumFractionDigits: 9 })} SOL`;
+
 // Losowy nonce (u64), żeby każda umowa wykonawcy miała inny adres.
 export const randomNonce = () => new BN(crypto.getRandomValues(new Uint8Array(8)), "le");
 
