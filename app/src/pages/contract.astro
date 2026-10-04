@@ -43,7 +43,7 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { web3 } from "@anchor-lang/core";
-  import { errorMessage, explorerAddress, explorerTx, fetchEscrow, getProgram, sol, type Escrow } from "../lib/program";
+  import { contractStatus, errorMessage, explorerAddress, explorerTx, fetchEscrow, getProgram, sol, type Escrow } from "../lib/program";
   import { onWalletChange, shortAddress, type AnchorWallet } from "../lib/wallet";
 
   const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
@@ -97,9 +97,7 @@ import Layout from "../layouts/Layout.astro";
     const isClient = !!me && !!escrow.client && me.equals(escrow.client);
 
     // Nagłówek
-    const [statusText, statusClass] = !funded
-      ? offerValid ? ["Czeka na wpłatę", "badge-info"] : ["Oferta wygasła", "badge-warning"]
-      : beforeDeadline ? ["W realizacji", "badge-primary"] : ["Po deadlinie", "badge-warning"];
+    const [statusText, statusClass] = contractStatus(escrow, now);
     $("#status").textContent = statusText;
     $("#status").className = `badge badge-lg ${statusClass}`;
     $("#amount").textContent = sol(escrow.amount);

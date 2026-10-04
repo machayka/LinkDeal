@@ -1,0 +1,64 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Moje umowy">
+  <h1 class="mb-4 text-2xl font-bold">Moje umowy</h1>
+  <div id="content" class="flex flex-col gap-6">
+    <div class="alert">Połącz portfel, aby zobaczyć swoje umowy.</div>
+  </div>
+</Layout>
+
+<script>
+  import { contractStatus, explorerAddress, myContracts, sol } from "../lib/program";
+  import { onWalletChange } from "../lib/wallet";
+
+  const content = document.querySelector<HTMLElement>("#content")!;
+
+  // Jedna sekcja: nagłówek + karty umów (albo informacja, że nie ma).
+  async function section(title: string, contracts: Awaited<ReturnType<typeof myContracts>>, empty: string) {
+    const box = document.createElement("section");
+    box.innerHTML = `<h2 class="mb-2 text-lg font-semibold">${title}</h2><div class="flex flex-col gap-2"></div>`;
+    const list = box.querySelector("div")!;
+    if (contracts.length === 0) list.innerHTML = `<p class="text-sm opacity-60">${empty}</p>`;
+    contracts
+      .sort((a, b) => a.account.deadline.toNumber() - b.account.deadline.toNumber())
+      .forEach(({ publicKey, account }) => {
+        const [status, statusClass] = contractStatus(account);
+        const card = document.createElement("a");
+        card.href = `/contract/${publicKey.toBase58()}`;
+        card.className = "card bg-base-100 shadow transition hover:shadow-md";
+        card.innerHTML = `<div class="card-body flex-row items-center justify-between gap-2 py-4">
+          <div>
+            <div class="font-semibold">${sol(account.amount)}</div>
+            <div class="text-xs opacity-60">Taski ${account.approved}/${account.tasks.length} · deadline ${new Date(account.deadline.toNumber() * 1000).toLocaleString("pl-PL")}</div>
+          </div>
+          <span class="badge ${statusClass}">${status}</span>
+        </div>`;
+        list.append(card);
+      });
+    return box;
+  }
+
+  onWalletChange(async (wallet) => {
+    if (!wallet) {
+      content.innerHTML = `<div class="alert">Połącz portfel, aby zobaczyć swoje umowy.</div>`;
+      return;
+    }
+    content.innerHTML = `<div class="flex justify-center p-10"><span class="loading loading-spinner loading-lg"></span></div>`;
+    const [asFreelancer, asClient] = await Promise.all([
+      myContracts(wallet.publicKey, "freelancer"),
+      myContracts(wallet.publicKey, "client"),
+    ]);
+
+    const history = document.createElement("p");
+    history.className = "text-sm opacity-70";
+    history.innerHTML = `Zakończone umowy znikają z blockchaina (rent wraca do wykonawcy). Ich historia: <a class="link" target="_blank" href="${explorerAddress(wallet.publicKey.toBase58())}">Twój portfel w Solana Explorer</a>.`;
+
+    content.replaceChildren(
+      await section("Jako wykonawca", asFreelancer, "Brak aktywnych umów. <a href='/new' class='link'>Utwórz umowę</a>"),
+      await section("Jako zleceniodawca", asClient, "Brak aktywnych umów, w których wpłaciłeś kwotę."),
+      history,
+    );
+  });
+</script>

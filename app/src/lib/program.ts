@@ -33,6 +33,23 @@ export function escrowPda(freelancer: web3.PublicKey, nonce: BN) {
 export const fetchEscrow = (address: web3.PublicKey) => getProgram(null).account.escrow.fetchNullable(address);
 export type Escrow = NonNullable<Awaited<ReturnType<typeof fetchEscrow>>>;
 
+// Aktywne umowy portfela: jako wykonawca (pole freelancer) albo zleceniodawca (pole client).
+// Filtr porównuje bajty na stałej pozycji w koncie: 8 bajtów nagłówka Anchora, potem freelancer (32),
+// potem client: 1 bajt „jest/nie ma” i adres. Zakończone umowy są zamknięte, więc ich tu nie ma.
+const FREELANCER_OFFSET = 8;
+const CLIENT_OFFSET = 8 + 32 + 1;
+export function myContracts(wallet: web3.PublicKey, role: "freelancer" | "client") {
+  const offset = role === "freelancer" ? FREELANCER_OFFSET : CLIENT_OFFSET;
+  return getProgram(null).account.escrow.all([{ memcmp: { offset, bytes: wallet.toBase58() } }]);
+}
+
+// Status umowy do wyświetlenia: [tekst, klasa koloru daisyUI].
+export function contractStatus(escrow: Escrow, now = Date.now() / 1000): [string, string] {
+  if (!escrow.client)
+    return now < escrow.offerExpiresAt.toNumber() ? ["Czeka na wpłatę", "badge-info"] : ["Oferta wygasła", "badge-warning"];
+  return now < escrow.deadline.toNumber() ? ["W realizacji", "badge-primary"] : ["Po deadlinie", "badge-warning"];
+}
+
 export const sol = (lamports: BN | number) =>
   `${(Number(lamports) / 1e9).toLocaleString("pl-PL", { maximumFractionDigits: 9 })} SOL`;
 

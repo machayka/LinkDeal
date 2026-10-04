@@ -2,6 +2,7 @@
 import "../styles/global.css";
 
 const { title } = Astro.props;
+const boardUrl = import.meta.env.PUBLIC_BOARD_URL ?? "https://ogloszenia.linkdeal.fun";
 ---
 
 <html lang="pl">
@@ -16,6 +17,8 @@ const { title } = Astro.props;
       <div class="flex-1">
         <a href="/" class="btn btn-ghost text-xl">LinkDeal</a>
         <a href="/new" class="btn btn-ghost btn-sm">Nowa umowa</a>
+        <a href="/me" class="btn btn-ghost btn-sm">Moje umowy</a>
+        <a href={boardUrl} class="btn btn-ghost btn-sm">Ogłoszenia ↗</a>
       </div>
       <button id="wallet-button" class="btn btn-primary btn-sm">Połącz portfel</button>
     </nav>
