@@ -4,8 +4,8 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Nowa oferta">
-  <h1 class="text-2xl font-bold">Twoja oferta dla zleceniodawcy</h1>
-  <p class="mb-4 opacity-70">
+  <h1 id="heading" class="text-2xl font-bold">Twoja oferta dla zleceniodawcy</h1>
+  <p id="intro" class="mb-4 opacity-70">
     Podziel zlecenie na etapy. Za każdy zaliczony milestone od razu dostajesz wynagrodzenie, więc nie ryzykujesz całej
     kwoty. Jeśli współpraca się urwie, zachowujesz to, co już zarobiłeś, a zleceniodawca odzyskuje resztę.
   </p>
@@ -52,11 +52,9 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </form>
 
-  <!-- Po utworzeniu oferty: link do wysłania zleceniodawcy -->
+  <!-- Po utworzeniu oferty: link do wysłania zleceniodawcy (nagłówek i opis zmienia skrypt) -->
   <div id="result" class="card bg-base-100 hidden shadow">
     <div class="card-body">
-      <h2 class="card-title">Oferta utworzona ✓</h2>
-      <p>Wyślij ten link zleceniodawcy:</p>
       <div class="join w-full">
         <input id="link" readonly class="input join-item w-full font-mono text-sm" />
         <button id="copy" class="btn join-item">Kopiuj</button>
@@ -172,6 +170,9 @@ import Layout from "../layouts/Layout.astro";
       const pda = escrowPda(wallet.publicKey, nonce).toBase58();
       document.querySelector<HTMLInputElement>("#link")!.value = `${location.origin}/contract/${pda}`;
       document.querySelector<HTMLAnchorElement>("#tx")!.href = explorerTx(signature);
+      document.querySelector("#heading")!.textContent = "Oferta gotowa ✓";
+      document.querySelector("#intro")!.textContent =
+        "Wyślij link zleceniodawcy na czacie, na którym ustalaliście warunki. Gdy przyjmie ofertę, kwota zlecenia zostanie zamrożona, a Ty możesz zaczynać pracę.";
       form.classList.add("hidden");
       document.querySelector("#result")!.classList.remove("hidden");
     } catch (e) {
