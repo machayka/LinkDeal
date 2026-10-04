@@ -127,12 +127,13 @@ import Layout from "../layouts/Layout.astro";
     );
 
     // Przyciski: tylko te akcje, które program w tej chwili przyjmie.
-    const actions: [string, () => Promise<string>][] = [];
+    const actions: [string, () => Promise<string>, string?][] = []; // [napis, transakcja, dopisek po sukcesie]
     const program = wallet && getProgram(wallet);
     const accounts = { escrow: escrowAddress(), freelancer: escrow.freelancer };
     if (program && !funded && offerValid && !isFreelancer)
       actions.push([`Przyjmij ofertę (wpłać ${sol(escrow.amount)})`, () =>
-        program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc()]);
+        program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc(),
+        `Masz ogłoszenie dla tego zlecenia? <a class="link" href="${BOARD_URL}/my">Zamknij je w Ogłoszeniach →</a>`]);
     if (program && isClient && beforeDeadline) {
       const task = escrow.tasks[escrow.approved];
       actions.push([`Zalicz Task ${escrow.approved + 1}: ${task.description}`, () =>
@@ -146,12 +147,12 @@ import Layout from "../layouts/Layout.astro";
         program.methods.refundAfterDeadline().accountsPartial({ ...accounts, client: escrow!.client! }).rpc()]);
 
     $("#actions").replaceChildren(
-      ...actions.map(([label, run]) => {
+      ...actions.map(([label, run, note]) => {
         const button = document.createElement("button");
         button.className = "btn btn-primary";
         button.textContent = label;
         button.disabled = busy;
-        button.onclick = () => execute(button, run);
+        button.onclick = () => execute(button, run, note);
         return button;
       }),
     );
@@ -159,9 +160,10 @@ import Layout from "../layouts/Layout.astro";
   }
 
   const escrowAddress = () => new web3.PublicKey(addressText);
+  const BOARD_URL = import.meta.env.PUBLIC_BOARD_URL ?? "https://ogloszenia.linkdeal.fun";
 
   // Wysyła transakcję, pokazuje wynik i odświeża dane umowy.
-  async function execute(button: HTMLButtonElement, run: () => Promise<string>) {
+  async function execute(button: HTMLButtonElement, run: () => Promise<string>, note = "") {
     busy = true;
     render();
     button.innerHTML = `<span class="loading loading-spinner"></span> Podpisz w portfelu…`;
@@ -169,7 +171,7 @@ import Layout from "../layouts/Layout.astro";
     try {
       const signature = await run();
       message.className = "alert alert-success";
-      message.innerHTML = `<span>Gotowe ✓ <a target="_blank" class="link" href="${explorerTx(signature)}">Transakcja w Solana Explorer</a></span>`;
+      message.innerHTML = `<span>Gotowe ✓ <a target="_blank" class="link" href="${explorerTx(signature)}">Transakcja w Solana Explorer</a> ${note}</span>`;
     } catch (e) {
       message.className = "alert alert-error";
       message.textContent = errorMessage(e);
