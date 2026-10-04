@@ -6,10 +6,10 @@ Zasada nadrzędna: **ogłoszenia nie dotykają pieniędzy ani umów.** Escrow dz
 
 ## Przepływ
 
-1. **Zleceniodawca** dodaje ogłoszenie: tytuł, opis, budżet i termin. Podpisuje się portfelem, bez zakładania konta.
+1. **Zleceniodawca** dodaje ogłoszenie: tytuł, opis i budżet. Podpisuje się portfelem, bez zakładania konta.
 2. **Wykonawca** przegląda listę, otwiera ogłoszenie i klika **„Napisz”**, co otwiera czat ze zleceniodawcą (TODO, patrz niżej).
 3. Strony ustalają kwotę, taski i deadline na czacie.
-4. Wykonawca klika **„Utwórz umowę”**. Otwiera się linkdeal.fun/new z wypełnionym budżetem i terminem, a dalej działa zwykły flow escrow.
+4. Wykonawca klika **„Utwórz umowę”**. Otwiera się linkdeal.fun/new z wypełnioną kwotą (budżet z ogłoszenia), a dalej działa zwykły flow escrow.
 5. Zleceniodawca zamyka ogłoszenie, gdy znalazł wykonawcę.
 
 ## Kontakt: czat — TODO
@@ -44,16 +44,15 @@ Do wyboru później. Kandydaci sprawdzeni w październiku 2026:
 | `title` | tytuł, krótki |
 | `description` | opis zlecenia |
 | `budget_sol` | budżet orientacyjny w SOL |
-| `due_date` | oczekiwany termin |
 | `status` | `open` / `closed` |
 | `created_at` | data dodania |
 
-Na start bez kategorii, tagów, zdjęć, ocen i ulubionych.
+Na start bez terminu, kategorii, tagów, zdjęć, ocen i ulubionych. Ogłoszenie nie wygasa samo — autor zamyka je ręcznie.
 
 ## Ekrany
 
-1. **Lista** (`/`): karty ogłoszeń z tytułem, budżetem, terminem i datą, najnowsze na górze.
-2. **Ogłoszenie** (`/o/<id>`): opis i dwa przyciski, „Napisz” (czat) i „Utwórz umowę”, który prowadzi do linkdeal.fun/new z danymi.
+1. **Lista** (`/`): karty ogłoszeń z tytułem, budżetem i datą dodania, najnowsze na górze.
+2. **Ogłoszenie** (`/o/<id>`): opis i dwa przyciski, „Napisz” (czat) i „Utwórz umowę”, który prowadzi do linkdeal.fun/new?amount=<budżet>.
 3. **Dodaj ogłoszenie** (`/new`): formularz zatwierdzany podpisem portfela.
 4. **Moje ogłoszenia** (`/my`): lista ogłoszeń podłączonego portfela z przyciskiem „Zamknij”.
 
@@ -64,10 +63,13 @@ Na start bez kategorii, tagów, zdjęć, ocen i ulubionych.
 - Weryfikacja podpisu portfela po stronie serwera (ed25519).
 - Docker Compose na Hetznerze, a Caddy kieruje `ogloszenia.linkdeal.fun` do kontenera `board`.
 
+## Decyzje
+
+- [x] Ogłoszenie bez terminu; nie wygasa samo, autor zamyka je ręcznie.
+- [x] „Utwórz umowę” przenosi tylko kwotę.
+
 ## Do decyzji zespołu
 
 - [ ] Czat: które gotowe rozwiązanie z autoryzacją portfelem?
-- [ ] Czy ogłoszenia mają wygasać same, np. po 30 dniach?
-- [ ] Czy „Utwórz umowę” ma przenosić tytuł ogłoszenia jako opis pierwszego taska?
 - [ ] Ochrona przed spamem: wystarczy podpis portfelem i limit ogłoszeń na portfel?
 - [ ] Czy pokazujemy tablicę na demo hackathonowym, czy tylko wspominamy o niej jako o planie?

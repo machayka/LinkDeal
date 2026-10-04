@@ -1,0 +1,102 @@
+---
+import "../styles/global.css";
+
+const { title } = Astro.props;
+const appUrl = import.meta.env.PUBLIC_APP_URL;
+---
+
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title ? `${title} · Ogłoszenia LinkDeal` : "Ogłoszenia LinkDeal"}</title>
+  </head>
+  <body class="min-h-screen bg-base-200">
+    <nav class="navbar bg-base-100 shadow-sm">
+      <div class="flex-1">
+        <a href="/" class="btn btn-ghost text-xl">LinkDeal <span class="font-normal opacity-60">ogłoszenia</span></a>
+        <a href="/new" class="btn btn-ghost btn-sm">Dodaj ogłoszenie</a>
+        <a href="/my" class="btn btn-ghost btn-sm">Moje ogłoszenia</a>
+        <a href={appUrl} class="btn btn-ghost btn-sm">Umowy ↗</a>
+      </div>
+      <button id="wallet-button" class="btn btn-primary btn-sm">Połącz portfel</button>
+    </nav>
+
+    <main class="mx-auto max-w-2xl p-4">
+      <slot />
+    </main>
+
+    <!-- Okienko portfela: lista portfeli albo (po połączeniu) adres i „Rozłącz” -->
+    <dialog id="wallet-modal" class="modal">
+      <div class="modal-box max-w-sm">
+        <h3 id="wallet-title" class="mb-4 text-lg font-bold"></h3>
+        <ul id="wallet-list" class="menu w-full gap-1 p-0"></ul>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>zamknij</button></form>
+    </dialog>
+
+    <script>
+      import {
+        availableWallets,
+        connect,
+        disconnect,
+        onWalletChange,
+        onWalletsRegistered,
+        reconnect,
+        shortAddress,
+        type AnchorWallet,
+      } from "../lib/wallet";
+
+      const button = document.querySelector<HTMLButtonElement>("#wallet-button")!;
+      const modal = document.querySelector<HTMLDialogElement>("#wallet-modal")!;
+      const list = document.querySelector<HTMLElement>("#wallet-list")!;
+      const title = document.querySelector<HTMLElement>("#wallet-title")!;
+      let current: AnchorWallet | null = null;
+
+      // Wypełnia okienko zależnie od stanu: niepołączony → portfele, połączony → adres i „Rozłącz”.
+      function renderModal() {
+        list.innerHTML = "";
+        title.textContent = current ? "Twój portfel" : "Połącz portfel";
+        if (current) {
+          list.innerHTML = `
+            <li class="mb-2 font-mono text-sm break-all">${current.publicKey.toBase58()}</li>
+            <li><button class="btn btn-outline btn-error">Rozłącz</button></li>`;
+          list.querySelector("button")!.onclick = () => {
+            disconnect();
+            modal.close();
+          };
+          return;
+        }
+        const wallets = availableWallets();
+        if (wallets.length === 0) {
+          list.innerHTML = `<li class="text-sm">Nie wykryto portfela. Zainstaluj np. Phantom.</li>`;
+          return;
+        }
+        for (const wallet of wallets) {
+          const item = document.createElement("li");
+          item.innerHTML = `<a class="text-base"><img src="${wallet.icon}" class="size-7" /> ${wallet.name}</a>`;
+          item.onclick = () => {
+            modal.close();
+            connect(wallet).catch((e) => console.error(e));
+          };
+          list.append(item);
+        }
+      }
+
+      button.onclick = () => {
+        renderModal();
+        modal.showModal();
+      };
+
+      onWalletChange((wallet) => {
+        current = wallet;
+        button.textContent = wallet ? shortAddress(wallet.publicKey.toBase58()) : "Połącz portfel";
+      });
+
+      // Portfele rejestrują się asynchronicznie — próbujemy wtedy wznowić połączenie.
+      onWalletsRegistered(reconnect);
+      reconnect();
+    </script>
+  </body>
+</html>

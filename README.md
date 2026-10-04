@@ -74,12 +74,23 @@ docker build --platform linux/amd64 --target toolchain -t linkdeal-dev .
 docker run -d --name linkdeal --platform linux/amd64 \
   -v "$PWD":/workspaces/LinkDeal -w /workspaces/LinkDeal \
   -v linkdeal-solana:/root/.config/solana \
-  -p 8899:8899 -p 4321:4321 \
+  -p 8899:8899 -p 4321:4321 -p 4322:4322 \
   linkdeal-dev sleep infinity
 
 docker exec linkdeal npm install
 docker exec linkdeal cargo test -p linkdeal   # unit testy
 docker exec linkdeal anchor test              # testy integracyjne (Surfpool)
+
+# aplikacja umów → http://localhost:4321
+docker exec -it linkdeal bash -lc 'cd app && npm install && npm run dev'
+
+# ogłoszenia: Postgres w sieci Dockera + aplikacja → http://localhost:4322
+docker network create linkdeal-net
+docker run -d --name linkdeal-db --network linkdeal-net \
+  -e POSTGRES_USER=linkdeal -e POSTGRES_PASSWORD=linkdeal -e POSTGRES_DB=linkdeal \
+  -v linkdeal-db:/var/lib/postgresql/data postgres:17
+docker network connect linkdeal-net linkdeal
+docker exec -it linkdeal bash -lc 'cd board && npm install && npm run dev'
 
 # deploy na devnet (RPC w .env, wzór w .env.example)
 docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "$RPC_URL"'
