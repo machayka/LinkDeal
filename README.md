@@ -81,7 +81,7 @@ docker exec -it linkdeal bash -lc 'cd app && npm install && npm run dev'
 
 Ogłoszenia wymagają jeszcze Postgresa. Konfiguracja jest w [`board/.env.example`](board/.env.example) i [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Do testów w przeglądarce potrzebny jest portfel (np. Phantom) ustawiony na **devnet**.
 
-## Pytania jury
+## FAQ / Uzasadnienie projektowe
 
 | | |
 |---|---|
