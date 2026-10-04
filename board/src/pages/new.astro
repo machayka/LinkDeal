@@ -1,9 +1,14 @@
 ---
+import Info from "../components/Info.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Dodaj ogłoszenie">
-  <h1 class="mb-4 text-2xl font-bold">Dodaj ogłoszenie</h1>
+  <h1 class="text-2xl font-bold">Dodaj ogłoszenie</h1>
+  <p class="mb-4 opacity-70">
+    Opisz, czego potrzebujesz. Wykonawcy przygotują dla Ciebie oferty z podziałem na etapy. Pieniądze wpłacasz dopiero
+    wtedy, gdy przyjmiesz jedną z nich.
+  </p>
 
   <form id="form" class="card bg-base-100 shadow">
     <div class="card-body gap-4">
@@ -13,15 +18,30 @@ import Layout from "../layouts/Layout.astro";
       </fieldset>
       <fieldset class="fieldset">
         <legend class="fieldset-legend">Opis zlecenia</legend>
-        <textarea name="description" required maxlength="2000" rows="6" class="textarea w-full"></textarea>
+        <textarea
+          name="description"
+          required
+          maxlength="2000"
+          rows="6"
+          placeholder="Co trzeba zrobić, w jakiej formie i na kiedy"
+          class="textarea w-full"></textarea>
       </fieldset>
       <fieldset class="fieldset">
-        <legend class="fieldset-legend">Budżet (SOL)</legend>
-        <input name="budget" type="number" min="0.001" step="0.001" required class="input w-full" />
+        <legend class="fieldset-legend">
+          Budżet (orientacyjny)
+          <Info text="Pomaga wykonawcom ocenić zlecenie. Ostateczną kwotę zaproponuje wykonawca w swojej ofercie." />
+        </legend>
+        <label class="input w-full">
+          <input name="budget" type="number" min="0.001" step="0.001" required />
+          <span class="opacity-60">SOL</span>
+        </label>
       </fieldset>
 
       <div id="error" class="alert alert-error hidden"></div>
       <button id="submit" class="btn btn-primary">Połącz portfel, aby dodać</button>
+      <p class="text-xs opacity-60">
+        Ogłoszenie będzie widoczne dla wszystkich. Zamkniesz je w „Moich ogłoszeniach”, gdy znajdziesz wykonawcę.
+      </p>
       <p class="text-xs opacity-60">
         Portfel podpisze treść ogłoszenia, żeby potwierdzić, że dodajesz je Ty. To darmowe i nie jest transakcją.
       </p>
