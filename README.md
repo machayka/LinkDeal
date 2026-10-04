@@ -1,125 +1,92 @@
 # LinkDeal
 
-Escrow dla freelancerów na Solanie. Pieniądze za zlecenie są zamrożone w programie on-chain i trafiają do wykonawcy po zaliczeniu kolejnych milestone'ów. Bez pośrednika, backendu i bazy danych.
+![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)
+![Anchor 1.1.2](https://img.shields.io/badge/Anchor-1.1.2-blue)
+![Astro + daisyUI](https://img.shields.io/badge/Astro-daisyUI-orange?logo=astro&logoColor=white)
 
-Hackathon Superteam Poland, challenge „Finance Without Intermediaries”.
+**Escrow dla freelancerów na Solanie.** Kwota zlecenia jest zamrożona w programie on-chain i trafia do wykonawcy po zaliczeniu kolejnych milestone'ów. Bez pośrednika i bez arbitra.
 
-- **Aplikacja:** [linkdeal.fun](https://linkdeal.fun) · **Ogłoszenia:** [ogloszenia.linkdeal.fun](https://ogloszenia.linkdeal.fun)
-- **Program (devnet):** [`AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S`](https://explorer.solana.com/address/AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S?cluster=devnet)
+*Freelance escrow on Solana: funds locked on-chain, released milestone by milestone. No intermediary.*
+
+🌐 [linkdeal.fun](https://linkdeal.fun) · 📋 [ogloszenia.linkdeal.fun](https://ogloszenia.linkdeal.fun) · ⛓️ [program w Explorerze](https://explorer.solana.com/address/AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S?cluster=devnet) · 🦀 [kod programu](programs/linkdeal/src/lib.rs)
+
+Superteam Poland Hackathon · „Finance Without Intermediaries”
 
 ## Jak to działa
 
-1. Strony dogadują się poza aplikacją: na Discordzie, OLX albo przez [ogłoszenia](https://ogloszenia.linkdeal.fun).
-2. **Wykonawca** tworzy ofertę: milestone'y (opis i kwota każdego), deadline i ważność oferty. Kwota zlecenia to suma milestone'ów. Podpisuje ofertę portfelem i wysyła link zleceniodawcy.
-3. **Zleceniodawca** otwiera link, widzi warunki odczytane z blockchaina i przyjmuje ofertę. Cała kwota zostaje zamrożona na koncie umowy.
-4. Zleceniodawca zalicza milestone'y po kolei. Za każdy program od razu wypłaca wykonawcy jego kwotę.
-5. Po ostatnim milestonie umowa się zamyka. Jeśli do deadline'u nie wszystko zostało zaliczone, niewypłacona kwota wraca do zleceniodawcy.
+```mermaid
+sequenceDiagram
+    participant W as 👷 Wykonawca
+    participant P as ⛓️ Program LinkDeal
+    participant Z as 💼 Zleceniodawca
+    W->>P: create_escrow — oferta: milestone'y, deadline
+    W-->>Z: link do oferty (czat, e-mail)
+    Z->>P: fund — cała kwota zamrożona
+    loop każdy milestone
+        Z->>P: approve_milestone
+        P->>W: 💸 wypłata milestone'u
+    end
+    Note over P,Z: Po deadlinie niezaliczona reszta wraca do zleceniodawcy
+```
 
-## Dlaczego nie ma sporów
+- ✅ Zaliczony milestone oznacza natychmiastową wypłatę dla wykonawcy.
+- ↩️ Niezaliczony do deadline'u oznacza zwrot do zleceniodawcy.
+- 🛡️ Wykonawca ryzykuje najwyżej jeden milestone, a zleceniodawca płaci tylko za to, co zaliczył. Nie ma trzeciej drogi, więc nie ma sporów.
 
-Przykład: zlecenie na 3 SOL, 3 milestone'y po 1 SOL, deadline za miesiąc. Zleceniodawca zalicza milestone 1, więc wykonawca dostaje 1 SOL. Współpraca się urywa, a po deadlinie pozostałe 2 SOL wracają do zleceniodawcy.
+## Demo → program
 
-- Pieniądze leżą na koncie umowy, a nie u którejś ze stron. Nikt nie wypłaci ich sam dla siebie.
-- Każdy milestone ma tylko dwa wyniki: zaliczony oznacza wypłatę dla wykonawcy, niezaliczony do deadline'u oznacza zwrot do zleceniodawcy. Nie ma czego rozstrzygać, więc nie trzeba arbitra.
-- Wykonawca ryzykuje najwyżej jeden milestone. Jeśli praca nie zostanie zaliczona, nie robi kolejnych.
-- Deadline gwarantuje koniec umowy. Pieniądze nie utkną na zawsze.
+Każdy krok demo to jedna instrukcja w [`lib.rs`](programs/linkdeal/src/lib.rs). Link prowadzi do linii, która to sprawdza.
 
-## Kto co może
+| Krok w demo | Instrukcja | Program pilnuje, że… |
+|---|---|---|
+| 1️⃣ „Wyślij ofertę” | [`create_escrow`](programs/linkdeal/src/lib.rs#L13) | jest 1–10 milestone'ów z kwotą > 0 ([L121](programs/linkdeal/src/lib.rs#L121)), a oferta wygasa przed deadlinem ([L21](programs/linkdeal/src/lib.rs#L21)) |
+| 2️⃣ „Przyjmij ofertę i zamroź” | [`fund`](programs/linkdeal/src/lib.rs#L41) | oferta jest nieprzyjęta i ważna ([L43](programs/linkdeal/src/lib.rs#L43)); cała kwota trafia na konto umowy ([L50](programs/linkdeal/src/lib.rs#L50)) |
+| 3️⃣ „Zalicz milestone” | [`approve_milestone`](programs/linkdeal/src/lib.rs#L67) | podpisuje zleceniodawca z umowy ([L186](programs/linkdeal/src/lib.rs#L186)), przed deadlinem ([L69](programs/linkdeal/src/lib.rs#L69)); kwota idzie do wykonawcy ([L82](programs/linkdeal/src/lib.rs#L82)), a po ostatnim konto się zamyka ([L77](programs/linkdeal/src/lib.rs#L77)) |
+| 4️⃣ „Zwróć niewypłaconą kwotę” | [`refund_after_deadline`](programs/linkdeal/src/lib.rs#L102) | deadline minął ([L103](programs/linkdeal/src/lib.rs#L103)); reszta trafia tylko do zleceniodawcy z umowy ([L212](programs/linkdeal/src/lib.rs#L212)) |
+| 5️⃣ „Anuluj ofertę” | [`cancel`](programs/linkdeal/src/lib.rs#L90) | oferta wygasła i nikt jej nie przyjął ([L92](programs/linkdeal/src/lib.rs#L92)); kaucja wraca do wykonawcy |
 
-| Instrukcja | Kto | Kiedy | Efekt |
-|---|---|---|---|
-| `create_escrow` | wykonawca | 1–10 milestone'ów z opisem i kwotą > 0; oferta wygasa nie później niż deadline | powstaje oferta; wykonawca płaci kaucję ~0,0065 SOL za konto |
-| `fund` | każdy, ale tylko raz | przed wygaśnięciem oferty | przyjmujący zostaje zleceniodawcą; kwota zostaje zamrożona |
-| `approve_milestone` | tylko zleceniodawca | przed deadlinem, po kolei | wykonawca dostaje kwotę milestone'u; po ostatnim konto się zamyka |
-| `cancel` | każdy | oferta wygasła i nie została przyjęta | konto się zamyka, kaucja wraca do wykonawcy |
-| `refund_after_deadline` | każdy | po deadlinie | niewypłacona kwota wraca do zleceniodawcy, kaucja do wykonawcy |
-
-Na Solanie nic nie dzieje się samo, więc anulowanie i zwrot uruchamia przycisk. Kliknąć może każdy, ale pieniądze zawsze trafiają tylko do stron umowy.
-
-Przyjętej umowy nie da się anulować w trakcie. Gdyby mogła to zrobić jedna strona, zleceniodawca mógłby zabrać pieniądze tuż przed zaliczeniem pracy.
-
-## Backend służy tylko do ogłoszeń
-
-Cała logika umowy działa w programie on-chain: kto przyjmuje ofertę, kto zalicza, ile wypłacić, deadline i zwrot.
-
-- **linkdeal.fun** (aplikacja umów) to same statyczne pliki. Czyta umowy prosto z blockchaina, a transakcje podpisuje portfel użytkownika.
-- **ogloszenia.linkdeal.fun** to osobna aplikacja z bazą Postgres. Nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji. Autor ogłoszenia podaje kontakt (e-mail, Telegram albo Discord), który wykonawcy widzą po kliknięciu „Napisz” i połączeniu portfela.
-- Nawet jeśli serwer przestanie działać, każdą umowę da się dokończyć bezpośrednio przez program, np. z CLI.
-
-## Odpowiedzi na pytania jury
-
-- **Gdzie znika pośrednik?** Pieniądze trzyma i wypłaca program on-chain według reguł zapisanych w kodzie.
-- **Co, jeśli strona zniknie?** Gdy znika zleceniodawca, wykonawca zachowuje to, co już dostał, a reszta wraca do zleceniodawcy po deadlinie. Gdy znika wykonawca, zleceniodawca nie zalicza milestone'ów i po deadlinie odzyskuje resztę. Nieprzyjęta oferta wygasa i można ją anulować.
-- **Czy autor może coś zmienić po deployu?** Po ostatecznym deployu nie. Odbieramy uprawnienie do aktualizacji programu (upgrade authority), więc kodu nie da się już zmienić.
-- **Dlaczego blockchain, a nie baza?** W bazie pieniądze trzyma jej właściciel i trzeba mu ufać. Tutaj trzyma je program, którego reguł nikt nie zmieni, a każdą transakcję widać w Solana Explorer.
-
-## Pomysły na później
-
-- **Zakończenie umowy za zgodą obu stron:** wcześniejsze rozliczenie, gdy wykonawca i zleceniodawca podpiszą je razem. To nowy mechanizm w programie, celowo pominięty na hackathon.
-- **Czat w ogłoszeniach** z logowaniem portfelem zamiast kontaktu przez e-mail, Telegram lub Discord.
+Umowa to konto PDA [`Escrow`](programs/linkdeal/src/lib.rs#L221) (seedy `["escrow", wykonawca, nonce]`), a jego adres jest linkiem do umowy. Pieniądze mogą z niego trafić **tylko** do stron umowy. Autorzy aplikacji nie mają do niego żadnych uprawnień.
 
 ## Co gdzie jest
 
 ```
-programs/linkdeal/src/lib.rs   program: instrukcje, konto umowy, błędy, unit testy
-tests/linkdeal.ts              testy integracyjne na lokalnym blockchainie (Surfpool)
-app/                           aplikacja umów (Astro + daisyUI, statyczna) → linkdeal.fun
-board/                         ogłoszenia (Astro + API + Postgres) → ogloszenia.linkdeal.fun
-deploy/                        serwer: docker-compose.yml + Caddyfile
-Dockerfile, .devcontainer/     środowisko: Anchor 1.1.2, Rust 1.95, Node 24, Surfpool
+programs/linkdeal/src/lib.rs   ⛓️  program on-chain: 5 instrukcji, konto umowy, błędy
+tests/linkdeal.ts              🧪 testy integracyjne programu
+app/                           🌐 aplikacja umów → linkdeal.fun (statyczna, bez backendu)
+  src/pages/new.astro               formularz oferty
+  src/pages/contract.astro          strona umowy: stan z blockchaina + akcje
+  src/lib/program.ts                połączenie z programem
+board/                         📋 ogłoszenia → ogloszenia.linkdeal.fun (Astro + Postgres)
+deploy/                        🐳 serwer: docker-compose + Caddy
 ```
 
-## Uruchomienie lokalne
+**Ścieżka pieniędzy nie przechodzi przez żaden serwer.** Jedyny backend to ogłoszenia: opis zlecenia i kontakt do autora. Nie trzyma pieniędzy, nie tworzy umów i nie podpisuje transakcji.
 
-Wymagany jest tylko Docker.
+## Jak otworzyć projekt
+
+Wymagany jest tylko **Docker**. Wszystkie narzędzia (Anchor, Rust, Node, lokalny blockchain) są w obrazie.
 
 ```bash
+# 1. środowisko
 docker build --platform linux/amd64 --target toolchain -t linkdeal-dev .
-docker run -d --name linkdeal --platform linux/amd64 \
-  -v "$PWD":/workspaces/LinkDeal -w /workspaces/LinkDeal \
-  -v linkdeal-solana:/root/.config/solana \
-  -p 8899:8899 -p 4321:4321 -p 4322:4322 \
-  linkdeal-dev sleep infinity
+docker run -d --name linkdeal --platform linux/amd64 -v "$PWD":/workspaces/LinkDeal \
+  -w /workspaces/LinkDeal -p 4321:4321 -p 4322:4322 linkdeal-dev sleep infinity
 
-docker exec linkdeal npm install
-docker exec linkdeal cargo test -p linkdeal   # unit testy
-docker exec linkdeal anchor test              # testy integracyjne
+# 2. program: build + testy na lokalnym blockchainie
+docker exec linkdeal bash -lc 'npm install && anchor test'
 
-# aplikacja umów → http://localhost:4321
+# 3. aplikacja umów → http://localhost:4321  (najpierw: cp app/.env.example app/.env)
 docker exec -it linkdeal bash -lc 'cd app && npm install && npm run dev'
-
-# ogłoszenia (Postgres w sieci Dockera) → http://localhost:4322
-docker network create linkdeal-net
-docker run -d --name linkdeal-db --network linkdeal-net \
-  -e POSTGRES_USER=linkdeal -e POSTGRES_PASSWORD=linkdeal -e POSTGRES_DB=linkdeal \
-  -v linkdeal-db:/var/lib/postgresql/data postgres:17
-docker network connect linkdeal-net linkdeal
-docker exec -it linkdeal bash -lc 'cd board && npm install && npm run dev'
-
-# deploy programu na devnet (RPC w .env, wzór w .env.example)
-docker exec linkdeal bash -lc 'source .env && anchor deploy --provider.cluster "$RPC_URL"'
 ```
 
-Jeśli zmiana w kodzie „nie działa”, zrestartuj kontener (`docker restart linkdeal`). Docker Desktop potrafi czasem pokazywać kontenerowi starą wersję pliku.
+Ogłoszenia wymagają jeszcze Postgresa. Konfiguracja jest w [`board/.env.example`](board/.env.example) i [`deploy/docker-compose.yml`](deploy/docker-compose.yml). Do testów w przeglądarce potrzebny jest portfel (np. Phantom) ustawiony na **devnet**.
 
-## Deploy na serwer
+## Pytania jury
 
-Jeden serwer z Dockerem. Rekordy DNS typu A dla `linkdeal.fun`, `www` i `ogloszenia` wskazują na jego IP, a certyfikaty HTTPS Caddy pobiera sam.
-
-```bash
-curl -fsSL https://get.docker.com | sh            # Docker (raz)
-git clone https://github.com/machayka/LinkDeal.git
-cd LinkDeal/deploy
-cp .env.example .env && nano .env                 # hasło do bazy + RPC Heliusa
-docker compose up -d --build
-
-# aktualizacja
-git pull && docker compose up -d --build
-```
-
-## Status
-
-- [x] Program na devnecie: 5 instrukcji, unit testy i testy integracyjne
-- [x] Aplikacja umów i ogłoszenia na serwerze
-- [ ] Czat w ogłoszeniach
-- [ ] Ostateczny deploy z odebranym upgrade authority
+| | |
+|---|---|
+| **Gdzie znika pośrednik?** | Pieniądze trzyma i wypłaca program on-chain, a nie platforma. |
+| **Co, jeśli strona zniknie?** | Wykonawca zachowuje to, co dostał. Po deadlinie reszta wraca do zleceniodawcy. |
+| **Kto ma jakie uprawnienia?** | Zalicza tylko zleceniodawca. Pieniądze wychodzą tylko do stron umowy. |
+| **Czy autor może coś zmienić?** | Po odebraniu upgrade authority (`--final`) już nie. Stan widać w Explorerze. |
+| **Dlaczego blockchain, a nie baza?** | Bazie trzeba ufać. Reguł programu nikt nie zmieni, a każdą transakcję widać publicznie. |
