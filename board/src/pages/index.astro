@@ -14,10 +14,10 @@ const offers = await sql<Offer[]>`SELECT * FROM offers WHERE status = 'open' ORD
 
   {offers.length === 0 && <div class="alert">Nie ma jeszcze ogłoszeń. Dodaj pierwsze!</div>}
 
-  <div class="flex flex-col gap-3">
+  <div class="notes mt-2 flex flex-col gap-7">
     {
       offers.map((offer) => (
-        <a href={`/o/${offer.id}`} class="card bg-base-100 shadow transition hover:shadow-md">
+        <a href={`/o/${offer.id}`} class="note card bg-base-100">
           <div class="card-body">
             <div class="flex items-start justify-between gap-2">
               <h2 class="card-title">{offer.title}</h2>

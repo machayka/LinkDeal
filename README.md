@@ -10,7 +10,7 @@
 
 🌐 [linkdeal.fun](https://linkdeal.fun) · 📋 [ogloszenia.linkdeal.fun](https://ogloszenia.linkdeal.fun) · ⛓️ [program w Explorerze](https://explorer.solana.com/address/AjavKz4Y4NkvuvxdwAWQ5Wt4BUpJowA6H23PEdV9rd2S?cluster=devnet) · 🦀 [kod programu](programs/linkdeal/src/lib.rs)
 
-Superteam Poland Hackathon · „Finance Without Intermediaries”
+HackYeah Hackathon · „Finance Without Intermediaries”
 
 ## Jak to działa
 

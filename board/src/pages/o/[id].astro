@@ -18,7 +18,7 @@ const budget = offer && Number(offer.budget_sol).toLocaleString("pl-PL", { maxim
   {!offer && <div class="alert">Nie ma takiego ogłoszenia.</div>}
   {
     offer && (
-      <div class="card bg-base-100 shadow">
+      <div class="note card bg-base-100 mt-4">
         <div class="card-body gap-4">
           <div>
             <h1 class="text-2xl font-bold">{offer.title}</h1>

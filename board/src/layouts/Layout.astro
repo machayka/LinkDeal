@@ -5,7 +5,7 @@ const { title } = Astro.props;
 const appUrl = import.meta.env.PUBLIC_APP_URL;
 ---
 
-<html lang="pl" data-theme="pokwitowanie">
+<html lang="pl" data-theme="tablica">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
@@ -14,13 +14,13 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
     <title>{title ? `${title} · Ogłoszenia LinkDeal` : "Ogłoszenia LinkDeal"}</title>
   </head>
   <body class="flex min-h-screen flex-col bg-base-200">
-    <nav class="navbar border-b border-base-300 bg-base-100">
+    <nav class="navbar bg-neutral text-neutral-content">
       <div class="flex-1">
         <a href="/" class="btn btn-ghost font-display px-2 text-xl font-extrabold tracking-tight sm:text-2xl">LinkDeal <span class="hidden font-normal opacity-60 sm:inline">ogłoszenia</span></a>
-        <a href={appUrl} class="btn btn-ghost btn-sm hidden sm:inline-flex">Umowy ↗</a>
+        <a href={appUrl} target="_blank" class="btn btn-ghost btn-sm hidden sm:inline-flex">Umowy ↗</a>
       </div>
       <div class="flex items-center gap-1">
-        <a href="/my" class="btn btn-ghost btn-sm">Moje<span class="hidden sm:inline">&nbsp;ogłoszenia</span></a>
+        <a href="/my" class="btn btn-ghost btn-sm">Moje<span class="hidden sm:inline">ogłoszenia</span></a>
         <button id="wallet-button" class="btn btn-primary btn-sm">Połącz portfel</button>
       </div>
     </nav>
@@ -31,9 +31,9 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
 
     <footer class="border-t border-base-300 bg-base-100">
       <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
-        <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. Hackathon Superteam Poland.</p>
+        <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. HackYeah Hackathon.</p>
         <nav class="flex flex-wrap gap-x-5 gap-y-2">
-          <a href={`${appUrl}/o-projekcie`} class="link link-hover">O projekcie</a>
+          <a href={`${appUrl}/o-projekcie`} target="_blank" class="link link-hover">O projekcie ↗</a>
           <a href={`${appUrl}/media/linkdeal-prezentacja.pdf`} target="_blank" class="link link-hover">Prezentacja (PDF)</a>
           <a href="https://github.com/machayka/LinkDeal" target="_blank" class="link link-hover">Kod na GitHubie</a>
         </nav>
