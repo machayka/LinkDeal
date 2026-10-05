@@ -89,3 +89,8 @@ Ogłoszenia wymagają jeszcze Postgresa. Konfiguracja jest w [`board/.env.exampl
 | **Co, jeśli strona zniknie?** | Wykonawca zachowuje to, co dostał. Po deadlinie reszta wraca do zleceniodawcy. |
 | **Kto ma jakie uprawnienia?** | Zalicza tylko zleceniodawca. Pieniądze wychodzą tylko do stron umowy. |
 | **Dlaczego blockchain, a nie baza?** | Bazie trzeba ufać. Reguł programu nikt nie zmieni, a każdą transakcję widać publicznie. |
+
+## Autorzy
+
+- **Kacper Machaj**: [LinkedIn](https://www.linkedin.com/in/kacper-machaj-a1713a213/)
+- **Mariusz Wątroba**: [LinkedIn](https://www.linkedin.com/in/mariusz-w%C4%85troba-2703892b6/)
