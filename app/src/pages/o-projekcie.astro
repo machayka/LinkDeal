@@ -80,7 +80,18 @@ const faq = [
       Każdy przycisk w aplikacji to jedna instrukcja programu on-chain. Link prowadzi do linii kodu, która sprawdza
       warunki.
     </p>
-    <div class="card bg-base-100 mt-6 overflow-x-auto">
+    <ul class="mt-6 flex flex-col gap-3 md:hidden">
+      {
+        steps.map((step) => (
+          <li class="card bg-base-100 p-4">
+            <p class="font-medium">{step.action}</p>
+            <a href={`${PROGRAM_CODE_URL}#L${step.line}`} target="_blank" class="link link-primary font-mono text-sm">{step.instruction}</a>
+            <p class="mt-1 text-sm opacity-80">{step.rule}</p>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="card bg-base-100 mt-6 hidden overflow-x-auto md:block">
       <table class="table">
         <thead>
           <tr><th>W aplikacji</th><th>Instrukcja</th><th>Program pilnuje, że</th></tr>

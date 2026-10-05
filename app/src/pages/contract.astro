@@ -187,7 +187,7 @@ import Layout from "../layouts/Layout.astro";
       ...actions.map(({ label, run, hint, note }) => {
         const box = document.createElement("div");
         const button = document.createElement("button");
-        button.className = "btn btn-primary w-full";
+        button.className = "btn btn-primary h-auto min-h-12 w-full py-3 whitespace-normal";
         button.textContent = label; // opis milestone'u od wykonawcy — zawsze jako tekst
         button.disabled = busy;
         button.onclick = () => execute(button, run, note);

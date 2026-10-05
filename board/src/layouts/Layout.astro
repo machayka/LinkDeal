@@ -16,11 +16,11 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
   <body class="flex min-h-screen flex-col bg-base-200">
     <nav class="navbar border-b border-base-300 bg-base-100">
       <div class="flex-1">
-        <a href="/" class="btn btn-ghost font-display text-2xl font-extrabold tracking-tight">LinkDeal <span class="font-normal opacity-60">ogłoszenia</span></a>
+        <a href="/" class="btn btn-ghost font-display px-2 text-xl font-extrabold tracking-tight sm:text-2xl">LinkDeal <span class="hidden font-normal opacity-60 sm:inline">ogłoszenia</span></a>
         <a href={appUrl} class="btn btn-ghost btn-sm hidden sm:inline-flex">Umowy ↗</a>
       </div>
       <div class="flex items-center gap-1">
-        <a href="/my" class="btn btn-ghost btn-sm">Moje ogłoszenia</a>
+        <a href="/my" class="btn btn-ghost btn-sm">Moje<span class="hidden sm:inline">&nbsp;ogłoszenia</span></a>
         <button id="wallet-button" class="btn btn-primary btn-sm">Połącz portfel</button>
       </div>
     </nav>

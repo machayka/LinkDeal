@@ -16,7 +16,7 @@ const { title, wide = false } = Astro.props; // wide: szersza kolumna (strona g�
   <body class="flex min-h-screen flex-col bg-base-200">
     <nav class="navbar border-b border-base-300 bg-base-100">
       <div class="flex-1">
-        <a href="/" class="btn btn-ghost font-display text-2xl font-extrabold tracking-tight">LinkDeal</a>
+        <a href="/" class="btn btn-ghost font-display px-2 text-xl font-extrabold tracking-tight sm:text-2xl">LinkDeal</a>
         <a href={BOARD_URL} class="btn btn-ghost btn-sm hidden sm:inline-flex">Ogłoszenia ↗</a>
         <a href="/o-projekcie" class="btn btn-ghost btn-sm hidden sm:inline-flex">O projekcie</a>
       </div>
@@ -34,6 +34,7 @@ const { title, wide = false } = Astro.props; // wide: szersza kolumna (strona g�
       <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
         <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. Hackathon Superteam Poland.</p>
         <nav class="flex flex-wrap gap-x-5 gap-y-2">
+          <a href={BOARD_URL} class="link link-hover">Ogłoszenia</a>
           <a href="/o-projekcie" class="link link-hover">O projekcie</a>
           <a href={PRESENTATION_URL} target="_blank" class="link link-hover">Prezentacja (PDF)</a>
           <a href={GITHUB_URL} target="_blank" class="link link-hover">Kod na GitHubie</a>
