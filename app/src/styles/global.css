@@ -115,3 +115,212 @@
 .font-display {
   font-family: var(--font-display);
 }
+
+/* ───────── Strona główna ───────── */
+
+/* Siatka kropek jak papier milimetrowy; zanika ku brzegom. */
+.dot-grid {
+  position: relative;
+  isolation: isolate;
+}
+.dot-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(rgb(23 36 61 / 0.14) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 80% 70% at 65% 40%, black, transparent);
+}
+.dot-grid.on-dark::before {
+  background-image: radial-gradient(rgb(255 255 255 / 0.12) 1px, transparent 1px);
+}
+
+/* Bilet w hero: pieczątki przybijają się po kolei, licznik wypłat rośnie razem z nimi. */
+@property --paid {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+.live-ticket .stamp {
+  opacity: 0;
+  animation: stamp-in 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) var(--d) forwards;
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.9);
+  }
+  to {
+    opacity: 0.9;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+.live-ticket .paid {
+  counter-reset: paid var(--paid);
+  animation: paid 3s linear 0.6s forwards;
+}
+.live-ticket .paid::after {
+  content: "0," counter(paid, decimal-leading-zero);
+}
+@keyframes paid {
+  0% { --paid: 0; }
+  20%, 33% { --paid: 15; }
+  53%, 66% { --paid: 30; }
+  86%, 100% { --paid: 50; }
+}
+.live-ticket .progress-fill {
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: fill 3s linear 0.6s forwards;
+}
+@keyframes fill {
+  0% { transform: scaleX(0); }
+  20%, 33% { transform: scaleX(0.3); }
+  53%, 66% { transform: scaleX(0.6); }
+  86%, 100% { transform: scaleX(1); }
+}
+.live-ticket .fade-in {
+  opacity: 0;
+  animation: fade-in 0.4s ease var(--d) forwards;
+}
+.live-ticket .fade-out {
+  animation: fade-in 0.4s ease var(--d) reverse forwards;
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Rozmowa w sekcji „Kto ma zaufać pierwszy?”: wiadomości pojawiają się po kolei. */
+.chat-msg {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition-delay: calc(var(--i) * 0.7s);
+}
+.is-visible .chat-msg {
+  opacity: 1;
+  transform: none;
+}
+
+/* Przepływ środków: monety płyną po przerywanej linii (poziomo od 1024 px, pionowo niżej). */
+.flow-line {
+  position: relative;
+  border-left: 2px dashed var(--color-base-300);
+  min-height: 4.5rem;
+}
+.flow-line .coin {
+  position: absolute;
+  left: -6px;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  animation: flow-y 2.4s linear var(--d, 0s) infinite paused;
+}
+.flow-line.reverse .coin {
+  animation-direction: reverse;
+}
+.is-visible .flow-line .coin {
+  animation-play-state: running;
+}
+@keyframes flow-y {
+  from { top: 0; opacity: 0; }
+  15%, 85% { opacity: 1; }
+  to { top: calc(100% - 10px); opacity: 0; }
+}
+@media (width >= 64rem) {
+  .flow-line {
+    border-left: 0;
+    border-top: 2px dashed var(--color-base-300);
+    min-height: 0;
+  }
+  .flow-line .coin {
+    top: -6px;
+    left: 0;
+    animation-name: flow-x;
+  }
+  @keyframes flow-x {
+    from { left: 0; opacity: 0; }
+    15%, 85% { opacity: 1; }
+    to { left: calc(100% - 10px); opacity: 0; }
+  }
+}
+
+/* Bilet z dwóch połówek: perforacja między stronami umowy. */
+.split-ticket > :last-child {
+  position: relative;
+  border-top: 2px dashed var(--color-base-300);
+}
+.split-ticket > :last-child::before,
+.split-ticket > :last-child::after {
+  content: "";
+  position: absolute;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 9999px;
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  top: -0.75rem;
+}
+.split-ticket > :last-child::before {
+  left: -0.75rem;
+  clip-path: inset(0 0 0 50%);
+}
+.split-ticket > :last-child::after {
+  right: -0.75rem;
+  clip-path: inset(0 50% 0 0);
+}
+@media (width >= 48rem) {
+  .split-ticket > :last-child {
+    border-top: 0;
+    border-left: 2px dashed var(--color-base-300);
+  }
+  .split-ticket > :last-child::before {
+    top: -0.75rem;
+    left: -0.75rem;
+    clip-path: inset(50% 0 0 0);
+  }
+  .split-ticket > :last-child::after {
+    top: auto;
+    bottom: -0.75rem;
+    right: auto;
+    left: -0.75rem;
+    clip-path: inset(0 0 50% 0);
+  }
+}
+
+/* Lista „czego nie chcemy”: przekreślenie rysuje się, gdy sekcja wjedzie w widok. */
+.strike {
+  background: linear-gradient(currentColor, currentColor) 0 55% / 0 2px no-repeat;
+  transition: background-size 0.5s ease calc(var(--i) * 0.15s);
+}
+.is-visible .strike {
+  background-size: 100% 2px;
+}
+
+/* Kod Rust na granatowym tle. */
+.code-card pre {
+  background: transparent !important;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+/* Kto ma wyłączone animacje, widzi od razu stan końcowy. */
+@media (prefers-reduced-motion: reduce) {
+  .live-ticket *,
+  .live-ticket *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .flow-line .coin {
+    display: none;
+  }
+  .strike,
+  .chat-msg {
+    transition: none;
+  }
+}

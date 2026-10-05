@@ -1,52 +1,363 @@
 ---
+// Strona główna: problem → jak to działa → korzyści → co jest potrzebne → demo → pytania → wypróbuj.
+import { Code } from "astro:components";
 import Layout from "../layouts/Layout.astro";
-import { BOARD_URL } from "../lib/config";
+import { BOARD_URL, EXPLORER_PROGRAM_URL, PRESENTATION_URL, PROGRAM_CODE_URL, PROGRAM_ID } from "../lib/config";
 
-// Przykładowa umowa na stronie głównej — pokazuje mechanizm zamiast go opisywać.
+// Przykładowa umowa w hero — pieczątki przybijają się po kolei (--d = opóźnienie).
 const example = [
-  { title: "Projekt logo", amount: "0,15", state: "done" },
-  { title: "Strona główna", amount: "0,15", state: "next" },
-  { title: "Wdrożenie", amount: "0,20", state: "waiting" },
+  { title: "Projekt logo", amount: "0,15", d: "0.6s" },
+  { title: "Strona główna", amount: "0,15", d: "1.6s" },
+  { title: "Wdrożenie", amount: "0,20", d: "2.6s" },
 ];
+
+const steps = [
+  "Wykonawca dzieli zlecenie na etapy i do każdego przypisuje kwotę.",
+  "Zleceniodawca przyjmuje ofertę, a cała kwota zostaje zamrożona w programie.",
+  "Za każdy zaliczony etap program od razu wypłaca wykonawcy jego część.",
+  "Czego nie zaliczono do deadline'u, wraca do zleceniodawcy.",
+];
+
+const freelancer = [
+  "Zaczynasz pracę, gdy pieniądze są już zamrożone. Widzisz to na blockchainie, a nie w obietnicy.",
+  "Ryzykujesz najwyżej jeden etap, a nie całe zlecenie.",
+];
+const client = [
+  "Płacisz tylko za to, co sam zaliczysz.",
+  "Nie wpłacasz nikomu do ręki, tylko do programu, którego reguł nikt nie zmieni.",
+];
+
+const notNeeded = ["konta i hasła", "imienia i nazwiska", "podpisanej umowy", "numeru konta w banku", "prowizji dla pośrednika"];
+
+// Fragment programu (programs/linkdeal/src/lib.rs, approve_milestone) — skrócony, bez zmian w logice.
+const snippet = `pub fn approve_milestone(ctx: Context<ApproveMilestone>) -> Result<()> {
+    require!(
+        Clock::get()?.unix_timestamp < escrow.deadline,
+        LinkDealError::DeadlinePassed
+    );
+    // …
+    let payout = escrow.tasks[index].amount;
+    ctx.accounts.escrow.sub_lamports(payout)?;
+    ctx.accounts.freelancer.add_lamports(payout)?;`;
+
+const faq = [
+  { q: "Kto ma jakie uprawnienia?", a: "Milestone'y zalicza tylko zleceniodawca. Pieniądze mogą trafić wyłącznie do stron umowy, autorzy aplikacji nie mają do nich dostępu." },
+  { q: "Dlaczego blockchain, a nie baza danych?", a: "Bazie trzeba ufać. Na blockchainie każdą transakcję widać publicznie w Solana Explorer." },
+  { q: "Ile to kosztuje?", a: "Opłaty sieci to ułamki grosza. Utworzenie oferty wymaga kaucji ok. 0,0065 SOL, która wraca w całości." },
+];
+
+const shortProgram = `${PROGRAM_ID.slice(0, 6)}…${PROGRAM_ID.slice(-4)}`;
 ---
 
-<Layout wide>
-  <section class="grid items-center gap-12 py-8 md:grid-cols-[1.15fr_1fr] md:py-16">
-    <div>
-      <h1 class="font-display text-5xl leading-[1.02] font-extrabold md:text-6xl">Płać za postęp, nie za obietnice.</h1>
-      <p class="mt-5 max-w-md text-lg opacity-80">
-        Kwota zlecenia czeka zamrożona na blockchainie Solana. Wykonawca dostaje ją kawałek po kawałku, gdy zleceniodawca
-        zalicza kolejne etapy. To, czego nie zaliczy do deadline'u, wraca do niego.
-      </p>
-      <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
-        <a href="/new" class="btn btn-primary btn-lg">Utwórz ofertę</a>
-        <a href={BOARD_URL} target="_blank" class="link font-medium">Szukasz wykonawcy? Dodaj ogłoszenie</a>
+<Layout landing>
+  <!-- 1. Hero -->
+  <section class="dot-grid overflow-hidden">
+    <div class="mx-auto grid max-w-6xl items-center gap-14 px-4 py-14 md:grid-cols-[1.1fr_1fr] md:py-24">
+      <div>
+        <a href={EXPLORER_PROGRAM_URL} target="_blank" class="inline-flex items-center gap-2 rounded-full border border-base-300 bg-base-100 px-3 py-1 text-sm font-medium">
+          <span class="relative flex size-2">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-75"></span>
+            <span class="relative inline-flex size-2 rounded-full bg-accent"></span>
+          </span>
+          Działa na Solana Devnet
+        </a>
+        <h1 class="font-display mt-6 text-5xl leading-[0.95] font-extrabold tracking-tight sm:text-6xl lg:text-7xl">
+          Freelancing<br />bez ufania<br />na słowo.
+        </h1>
+        <p class="mt-6 max-w-md text-lg opacity-80">
+          Zleceniodawca i wykonawca zawierają umowę, której warunków pilnuje program na Solanie.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <a href="/new" class="btn btn-primary btn-lg">Utwórz ofertę</a>
+          <a href={BOARD_URL} target="_blank" class="link font-medium">Szukasz wykonawcy? Dodaj ogłoszenie ↗</a>
+        </div>
       </div>
-      <p class="mt-4 text-sm opacity-60">Dostałeś link do oferty? Otwórz go, żeby ją przyjąć.</p>
+
+      <!-- Przykładowa umowa, która „sama się rozlicza” -->
+      <div class="relative">
+        <div class="absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgb(45_91_255/0.22),transparent)] blur-2xl" aria-hidden="true"></div>
+        <div class="live-ticket card bg-base-100 md:rotate-2" aria-label="Przykładowa umowa: trzy zaliczone milestone'y, wypłacono 0,50 SOL">
+          <div class="flex items-start justify-between px-6 pt-6 pb-5">
+            <div>
+              <p class="text-sm opacity-60">Umowa</p>
+              <p class="font-display text-3xl font-bold">0,50 SOL</p>
+            </div>
+            <span class="grid">
+              <span class="badge badge-primary fade-out col-start-1 row-start-1" style="--d: 3.2s">W realizacji</span>
+              <span class="badge badge-accent fade-in col-start-1 row-start-1" style="--d: 3.4s">Zakończona</span>
+            </span>
+          </div>
+          {
+            example.map((task, i) => (
+              <div class="ticket-row flex items-center gap-4 px-6 py-4">
+                <span class="font-display w-4 text-lg font-bold opacity-30">{i + 1}</span>
+                <div class="flex-1">
+                  <p class="font-medium">{task.title}</p>
+                  <p class="text-sm opacity-60">{task.amount} SOL</p>
+                </div>
+                <span class="stamp" style={`--d: ${task.d}`}>zaliczony</span>
+              </div>
+            ))
+          }
+          <div class="ticket-row px-6 pt-4 pb-6">
+            <div class="flex items-baseline justify-between">
+              <p class="text-sm opacity-60">Wypłacono wykonawcy</p>
+              <p class="font-display text-xl font-bold"><span class="paid"></span> SOL</p>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-base-200">
+              <div class="progress-fill h-full rounded-full bg-accent"></div>
+            </div>
+            <p class="fade-in mt-3 flex items-center gap-2 font-mono text-xs opacity-60" style="--d: 3.4s">
+              <span class="text-accent">✓</span> tx 5Kq8…f9Pw · potwierdzona na Solanie
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Problem -->
+  <section class="reveal mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 md:grid-cols-[1.1fr_1fr] md:py-28">
+    <div>
+      <h2 class="text-4xl md:text-5xl">Kto ma zaufać pierwszy?</h2>
+      <p class="mt-6 max-w-lg text-lg opacity-80">
+        Wykonawca, który robi całość i czeka na zapłatę, ryzykuje, że pieniędzy nie zobaczy. Zleceniodawca, który płaci z
+        góry, ryzykuje, że nie dostanie efektów pracy. Pośrednik rozwiązuje to za prowizję: trzyma pieniądze, może
+        wstrzymać wypłatę albo zablokować konto.
+      </p>
     </div>
 
-    <!-- Przykładowy bilet umowy -->
-    <div class="card bg-base-100 md:rotate-2" aria-label="Przykładowa umowa">
-      <div class="flex items-start justify-between px-6 pt-6 pb-5">
-        <div>
-          <p class="text-sm opacity-60">Umowa</p>
-          <p class="font-display text-3xl font-bold">0,50 SOL</p>
-        </div>
-        <span class="badge badge-primary">W realizacji</span>
+    <!-- Rozmowa, którą zna każdy, kto pracował z obcymi -->
+    <div class="card bg-base-100 mx-auto w-full max-w-sm" aria-label="Przykładowa rozmowa: zleceniodawca nie odpowiada po oddaniu pracy">
+      <div class="flex items-center gap-3 border-b border-base-300 px-5 py-3">
+        <span class="grid size-8 place-items-center rounded-full bg-base-300 text-sm font-bold">K</span>
+        <span class="font-medium">Klient</span>
       </div>
-      {
-        example.map((task, i) => (
-          <div class="ticket-row flex items-center gap-4 px-6 py-4">
-            <span class="font-display w-4 text-lg font-bold opacity-30">{i + 1}</span>
-            <div class="flex-1">
-              <p class="font-medium">{task.title}</p>
-              <p class="text-sm opacity-60">{task.amount} SOL</p>
+      <div class="flex flex-col gap-2 p-5 text-sm">
+        <p class="chat-msg text-center text-xs opacity-50" style="--i: 0">dzień 1</p>
+        <p class="chat-msg max-w-[80%] self-start rounded-2xl rounded-bl-sm bg-base-200 px-4 py-2" style="--i: 0">Zaczynaj, zapłacę po całości 👍</p>
+        <p class="chat-msg mt-2 text-center text-xs opacity-50" style="--i: 1">dzień 14</p>
+        <p class="chat-msg max-w-[80%] self-end rounded-2xl rounded-br-sm bg-primary px-4 py-2 text-primary-content" style="--i: 1">Gotowe, pliki w załączniku</p>
+        <p class="chat-msg mt-2 text-center text-xs opacity-50" style="--i: 2">dzień 30</p>
+        <p class="chat-msg max-w-[80%] self-end rounded-2xl rounded-br-sm bg-primary px-4 py-2 text-primary-content" style="--i: 2">Kiedy przelew?</p>
+        <p class="chat-msg self-end text-xs opacity-50" style="--i: 3">Odczytano ✓✓</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Jak to działa: przepływ środków -->
+  <section class="reveal border-y border-base-300 bg-base-100">
+    <div class="mx-auto max-w-6xl px-4 py-20 md:py-28">
+      <h2 class="text-4xl md:text-5xl">Jak to działa</h2>
+
+      <div class="mt-12 flex flex-col items-stretch lg:flex-row lg:items-center" aria-hidden="true">
+        <div class="card bg-base-200 flex-row items-center gap-3 p-5 lg:shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-7 shrink-0 text-accent"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+          <p class="font-display text-lg font-bold">Zleceniodawca</p>
+        </div>
+        <div class="flex flex-1 gap-6 px-6 py-2 lg:flex-col lg:gap-5 lg:px-4 lg:py-0">
+          <div class="flex-1">
+            <p class="mb-2 text-sm font-medium opacity-70 lg:text-center">cała kwota</p>
+            <div class="flow-line ml-2 lg:ml-0">
+              <span class="coin bg-primary"></span><span class="coin bg-primary" style="--d: 0.8s"></span><span class="coin bg-primary" style="--d: 1.6s"></span>
             </div>
-            {task.state === "done" && <span class="stamp">zaliczony</span>}
-            {task.state === "next" && <span class="badge badge-primary badge-outline">następny</span>}
           </div>
+          <div class="flex-1">
+            <div class="flow-line reverse ml-2 lg:ml-0">
+              <span class="coin bg-base-content/30" style="--d: 0.4s"></span>
+            </div>
+            <p class="mt-2 text-sm opacity-50 lg:text-center">reszta po deadlinie</p>
+          </div>
+        </div>
+        <div class="card bg-neutral text-neutral-content gap-1 p-6 lg:w-60 lg:shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-7 shrink-0 text-accent"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+          <p class="font-display mt-2 text-lg font-bold">Program na Solanie</p>
+          <p class="font-mono text-sm opacity-70">zamrożone SOL</p>
+        </div>
+        <div class="flex-1 px-6 py-2 lg:px-4 lg:py-0">
+          <p class="mb-2 text-sm font-medium opacity-70 lg:text-center">za każdy etap</p>
+          <div class="flow-line ml-2 lg:ml-0">
+            <span class="coin bg-accent"></span><span class="coin bg-accent" style="--d: 1.2s"></span>
+          </div>
+        </div>
+        <div class="card bg-base-200 flex-row items-center gap-3 p-5 lg:shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-7 shrink-0 text-primary"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+          <p class="font-display text-lg font-bold">Wykonawca</p>
+        </div>
+      </div>
+
+      <ol class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          steps.map((step, i) => (
+            <li class="card bg-base-200 p-6">
+              <p class="font-display text-5xl font-extrabold text-primary">{i + 1}</p>
+              <p class="mt-3">{step}</p>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="mt-12 text-center">
+        <span class="stamp px-4 py-2 text-base md:text-lg">Nie ma trzeciej drogi, więc nie ma sporów</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- 4. Korzyści dla obu stron: bilet z dwóch połówek -->
+  <section class="mx-auto max-w-6xl px-4 py-20 md:py-28">
+    <div class="split-ticket card bg-base-100 grid md:grid-cols-2">
+      <div class="p-6 md:p-10">
+        <h2 class="flex items-center gap-3 text-3xl"><span class="size-3 rounded-full bg-primary"></span>Dla wykonawców</h2>
+        <ul class="mt-6 flex flex-col gap-4">
+          {freelancer.map((item) => <li class="flex gap-3"><span class="font-bold text-primary">✓</span>{item}</li>)}
+        </ul>
+      </div>
+      <div class="p-6 md:p-10">
+        <h2 class="flex items-center gap-3 text-3xl"><span class="size-3 rounded-full bg-accent"></span>Dla zleceniodawców</h2>
+        <ul class="mt-6 flex flex-col gap-4">
+          {client.map((item) => <li class="flex gap-3"><span class="font-bold text-accent">✓</span>{item}</li>)}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Kod jest Twoją umową -->
+  <section class="reveal mx-auto max-w-6xl px-4 pb-20 md:pb-28">
+    <h2 class="text-4xl md:text-5xl">Kod jest Twoją umową.</h2>
+    <div class="mt-10 grid gap-6 md:grid-cols-[1fr_1.4fr]">
+      <div class="card bg-base-100 p-6 md:row-span-2 md:p-8">
+        <p class="font-display text-2xl font-bold">Czego od Ciebie nie chcemy</p>
+        <ul class="mt-6 flex flex-col gap-4 text-lg">
+          {
+            notNeeded.map((item, i) => (
+              <li class="flex items-center gap-3">
+                <span class="font-bold text-error" aria-hidden="true">✕</span>
+                <span class="strike decoration-base-content/30 opacity-70" style={`--i: ${i}`}>{item}</span>
+              </li>
+            ))
+          }
+          <li class="mt-2 flex items-center gap-3 font-semibold">
+            <span class="text-success" aria-hidden="true">✓</span>
+            wystarczy portfel i link do oferty
+          </li>
+        </ul>
+      </div>
+
+      <div class="code-card card min-w-0 overflow-hidden bg-neutral text-neutral-content">
+        <div class="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3 text-sm">
+          <span class="font-mono opacity-70">lib.rs · approve_milestone</span>
+          <a href={`${PROGRAM_CODE_URL}#L65`} target="_blank" class="link link-hover shrink-0">Zobacz w kodzie ↗</a>
+        </div>
+        <Code code={snippet} lang="rust" theme="github-dark" />
+      </div>
+
+      <div class="card bg-base-100 p-6 md:p-8">
+        <p class="font-display text-2xl font-bold">Rozliczasz się w SOL, kryptowalucie Solany</p>
+        <dl class="mt-5 grid gap-5 sm:grid-cols-3">
+          <div>
+            <dt class="font-semibold">Czym jest SOL</dt>
+            <dd class="mt-1 text-sm opacity-70">Kryptowaluta sieci Solana. Wynagrodzenie trafia prosto do portfela wykonawcy, bez banku po drodze.</dd>
+          </div>
+          <div>
+            <dt class="font-semibold">Jak zacząć</dt>
+            <dd class="mt-1 text-sm opacity-70">Zainstaluj portfel, np. Phantom, i kup w nim trochę SOL albo przelej je z giełdy kryptowalut.</dd>
+          </div>
+          <div>
+            <dt class="font-semibold">Kwota jest w SOL</dt>
+            <dd class="mt-1 text-sm opacity-70">Kurs SOL się zmienia, więc wartość w złotówkach w chwili wypłaty może być inna niż w dniu zawarcia umowy.</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Film -->
+  <section class="border-y border-base-300 bg-base-100">
+    <div class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 md:grid-cols-[1.6fr_1fr] md:py-28">
+      <div class="card relative overflow-hidden bg-neutral">
+        <video id="demo" preload="metadata" poster="/media/linkdeal-demo.jpg" class="aspect-video w-full">
+          <source src="/media/linkdeal-demo.mp4" type="video/mp4" />
+        </video>
+        <button id="play" class="group absolute inset-0 grid place-items-center bg-neutral/30 transition hover:bg-neutral/10" aria-label="Odtwórz film">
+          <span class="grid size-20 place-items-center rounded-full bg-primary text-primary-content shadow-xl transition group-hover:scale-105">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="ml-1 size-8"><path d="M8 5v14l11-7z" /></svg>
+          </span>
+        </button>
+      </div>
+      <div>
+        <h2 class="text-4xl">Zobacz demo</h2>
+        <p class="mt-4 opacity-80">Zbudowane na HackYeah Hackathon w wyzwaniu „Finance Without Intermediaries”.</p>
+        <a href={PRESENTATION_URL} target="_blank" class="btn btn-primary mt-6">Otwórz prezentację (PDF)</a>
+        <div class="mt-6 flex items-center gap-1 rounded-field border border-base-300 bg-base-200 py-1 pr-1 pl-4">
+          <div class="flex-1">
+            <p class="text-xs opacity-60">Program na Solanie</p>
+            <p class="font-mono text-sm">{shortProgram}</p>
+          </div>
+          <button id="copy-program" data-address={PROGRAM_ID} class="btn btn-ghost btn-sm">Kopiuj</button>
+          <a href={EXPLORER_PROGRAM_URL} target="_blank" class="btn btn-ghost btn-sm">Explorer ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Pytania i odpowiedzi -->
+  <section class="mx-auto max-w-3xl px-4 py-20 md:py-28">
+    <h2 class="text-4xl md:text-5xl">Pytania i odpowiedzi</h2>
+    <div class="mt-10 flex flex-col gap-3">
+      {
+        faq.map((item) => (
+          <details class="collapse collapse-plus border border-base-300 bg-base-100">
+            <summary class="collapse-title font-display text-lg font-bold">{item.q}</summary>
+            <div class="collapse-content opacity-80">{item.a}</div>
+          </details>
         ))
       }
     </div>
   </section>
+
+  <!-- 8. Wypróbuj -->
+  <section class="dot-grid on-dark overflow-hidden bg-neutral text-neutral-content">
+    <div class="relative mx-auto max-w-6xl px-4 py-20 md:py-28">
+      <span class="stamp absolute top-10 right-6 hidden px-4 py-2 text-lg md:inline-block" aria-hidden="true">zaliczony</span>
+      <h2 class="text-5xl leading-none md:text-6xl">Płać za postęp,<br />nie za obietnice.</h2>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="/new" class="btn btn-primary btn-lg">Utwórz ofertę</a>
+        <a href={BOARD_URL} target="_blank" class="btn btn-lg btn-outline border-neutral-content/40 text-neutral-content hover:bg-white/10">Dodaj ogłoszenie ↗</a>
+      </div>
+      <p class="mt-6 max-w-xl opacity-70">Działa na sieci testowej Solana Devnet, więc wypróbujesz wszystko bez prawdziwych pieniędzy.</p>
+      <p class="mt-14 text-sm opacity-50">
+        LinkDeal pilnuje zapłaty, nie Twoich obowiązków podatkowych. Rozlicz dochód tak, jak wymagają przepisy Twojego kraju.
+      </p>
+    </div>
+  </section>
 </Layout>
+
+<script>
+  // Animacje sekcji (rozmowa, przepływ, przekreślenia) startują dopiero po pierwszym ruchu
+  // użytkownika (przewinięcie, dotyk, klawisz) i gdy sekcja jest w widoku.
+  const observer = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add("is-visible");
+      }),
+    { threshold: 0.3 },
+  );
+  const start = () => document.querySelectorAll(".reveal").forEach((section) => observer.observe(section));
+  for (const event of ["scroll", "wheel", "touchstart", "keydown"]) addEventListener(event, start, { once: true, passive: true });
+
+  // Film: własny przycisk ▶ zamiast pustego odtwarzacza; po kliknięciu natywne kontrolki.
+  const video = document.querySelector<HTMLVideoElement>("#demo")!;
+  const play = document.querySelector<HTMLButtonElement>("#play")!;
+  play.onclick = () => {
+    play.remove();
+    video.controls = true;
+    video.play();
+  };
+
+  // Kopiowanie adresu programu.
+  const copy = document.querySelector<HTMLButtonElement>("#copy-program")!;
+  copy.onclick = async () => {
+    await navigator.clipboard.writeText(copy.dataset.address!);
+    copy.textContent = "Skopiowano ✓";
+    setTimeout(() => (copy.textContent = "Kopiuj"), 2000);
+  };
+</script>
