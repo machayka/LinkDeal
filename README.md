@@ -94,4 +94,4 @@ Ogłoszenia wymagają jeszcze Postgresa. Konfiguracja jest w [`board/.env.exampl
 
 - **Kacper Machaj**: [LinkedIn](https://www.linkedin.com/in/kacper-machaj-a1713a213/)
 - **Mariusz Wątroba**: [LinkedIn](https://www.linkedin.com/in/mariusz-w%C4%85troba-2703892b6/)
-- **Claude** (AI): [Claude Code](https://claude.com/claude-code)
+- **Claud**-iusz (AI): [Claude Code](https://claude.com/claude-code)
