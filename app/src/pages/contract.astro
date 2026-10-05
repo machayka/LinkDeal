@@ -162,7 +162,7 @@ import Layout from "../layouts/Layout.astro";
       actions.push({
         label: `Przyjmij ofertę i zamroź ${sol(escrow.amount)}`,
         run: () => program.methods.fund().accountsPartial({ ...accounts, client: me! }).rpc(),
-        note: `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my">możesz już zamknąć swoje ogłoszenie →</a>`,
+        note: `Zlecenie ma wykonawcę — <a class="link" href="${BOARD_URL}/my" target="_blank">możesz już zamknąć swoje ogłoszenie →</a>`,
       });
     if (program && isClient && beforeDeadline) {
       const task = escrow.tasks[escrow.approved];
