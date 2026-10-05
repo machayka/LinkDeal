@@ -1,29 +1,52 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { BOARD_URL } from "../lib/config";
+
+// Przykładowa umowa na stronie głównej — pokazuje mechanizm zamiast go opisywać.
+const example = [
+  { title: "Projekt logo", amount: "0,15", state: "done" },
+  { title: "Strona główna", amount: "0,15", state: "next" },
+  { title: "Wdrożenie", amount: "0,20", state: "waiting" },
+];
 ---
 
-<Layout>
-  <div class="hero py-10">
-    <div class="hero-content text-center">
-      <div>
-        <h1 class="text-4xl font-bold">Umowa bez pośrednika</h1>
-        <p class="py-4">
-          Pieniądze za zlecenie leżą na koncie umowy na blockchainie Solana. Wykonawca dostaje je, gdy
-          zleceniodawca zalicza kolejne etapy. Po deadlinie niewypłacona reszta wraca do zleceniodawcy.
-        </p>
-        <a href="/new" class="btn btn-primary">Utwórz ofertę</a>
-        <p class="mt-4 text-sm opacity-70">
-          Dostałeś link do oferty? Otwórz go, żeby ją przyjąć. Szukasz wykonawcy?{" "}
-          <a href={BOARD_URL} class="link">Dodaj ogłoszenie →</a>
-        </p>
+<Layout wide>
+  <section class="grid items-center gap-12 py-8 md:grid-cols-[1.15fr_1fr] md:py-16">
+    <div>
+      <h1 class="font-display text-5xl leading-[1.02] font-extrabold md:text-6xl">Płać za postęp, nie za obietnice.</h1>
+      <p class="mt-5 max-w-md text-lg opacity-80">
+        Kwota zlecenia czeka zamrożona na blockchainie Solana. Wykonawca dostaje ją kawałek po kawałku, gdy zleceniodawca
+        zalicza kolejne etapy. To, czego nie zaliczy do deadline'u, wraca do niego.
+      </p>
+      <div class="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <a href="/new" class="btn btn-primary btn-lg">Utwórz ofertę</a>
+        <a href={BOARD_URL} class="link font-medium">Szukasz wykonawcy? Dodaj ogłoszenie</a>
       </div>
+      <p class="mt-4 text-sm opacity-60">Dostałeś link do oferty? Otwórz go, żeby ją przyjąć.</p>
     </div>
-  </div>
 
-  <ul class="steps steps-vertical">
-    <li class="step step-primary">Wykonawca tworzy ofertę i wysyła link</li>
-    <li class="step step-primary">Zleceniodawca przyjmuje ofertę i zamraża kwotę</li>
-    <li class="step step-primary">Zleceniodawca zalicza milestone'y, a program wypłaca wykonawcy</li>
-  </ul>
+    <!-- Przykładowy bilet umowy -->
+    <div class="card bg-base-100 md:rotate-2" aria-label="Przykładowa umowa">
+      <div class="flex items-start justify-between px-6 pt-6 pb-5">
+        <div>
+          <p class="text-sm opacity-60">Umowa</p>
+          <p class="font-display text-3xl font-bold">0,50 SOL</p>
+        </div>
+        <span class="badge badge-primary">W realizacji</span>
+      </div>
+      {
+        example.map((task, i) => (
+          <div class="ticket-row flex items-center gap-4 px-6 py-4">
+            <span class="font-display w-4 text-lg font-bold opacity-30">{i + 1}</span>
+            <div class="flex-1">
+              <p class="font-medium">{task.title}</p>
+              <p class="text-sm opacity-60">{task.amount} SOL</p>
+            </div>
+            {task.state === "done" && <span class="stamp">zaliczony</span>}
+            {task.state === "next" && <span class="badge badge-primary badge-outline">następny</span>}
+          </div>
+        ))
+      }
+    </div>
+  </section>
 </Layout>

@@ -1,22 +1,24 @@
 ---
 import "../styles/global.css";
-import { BOARD_URL } from "../lib/config";
+import { BOARD_URL, EXPLORER_PROGRAM_URL, GITHUB_URL, PRESENTATION_URL } from "../lib/config";
 
-const { title } = Astro.props;
+const { title, wide = false } = Astro.props; // wide: szersza kolumna (strona główna)
 ---
 
-<html lang="pl">
+<html lang="pl" data-theme="pokwitowanie">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
+    <meta name="color-scheme" content="light" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title ? `${title} · LinkDeal` : "LinkDeal"}</title>
   </head>
-  <body class="min-h-screen bg-base-200">
-    <nav class="navbar bg-base-100 shadow-sm">
+  <body class="flex min-h-screen flex-col bg-base-200">
+    <nav class="navbar border-b border-base-300 bg-base-100">
       <div class="flex-1">
-        <a href="/" class="btn btn-ghost text-xl">LinkDeal</a>
+        <a href="/" class="btn btn-ghost font-display text-2xl font-extrabold tracking-tight">LinkDeal</a>
         <a href={BOARD_URL} class="btn btn-ghost btn-sm hidden sm:inline-flex">Ogłoszenia ↗</a>
+        <a href="/o-projekcie" class="btn btn-ghost btn-sm hidden sm:inline-flex">O projekcie</a>
       </div>
       <div class="flex items-center gap-1">
         <a href="/me" class="btn btn-ghost btn-sm">Moje umowy</a>
@@ -24,9 +26,21 @@ const { title } = Astro.props;
       </div>
     </nav>
 
-    <main class="mx-auto max-w-2xl p-4">
+    <main class:list={["mx-auto w-full flex-1 p-4", wide ? "max-w-5xl" : "max-w-2xl"]}>
       <slot />
     </main>
+
+    <footer class="border-t border-base-300 bg-base-100">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
+        <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. Hackathon Superteam Poland.</p>
+        <nav class="flex flex-wrap gap-x-5 gap-y-2">
+          <a href="/o-projekcie" class="link link-hover">O projekcie</a>
+          <a href={PRESENTATION_URL} target="_blank" class="link link-hover">Prezentacja (PDF)</a>
+          <a href={GITHUB_URL} target="_blank" class="link link-hover">Kod na GitHubie</a>
+          <a href={EXPLORER_PROGRAM_URL} target="_blank" class="link link-hover">Program w Solana Explorer</a>
+        </nav>
+      </div>
+    </footer>
 
     <!-- Okienko portfela: lista portfeli albo (po połączeniu) adres i „Rozłącz” -->
     <dialog id="wallet-modal" class="modal">

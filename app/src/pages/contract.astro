@@ -15,7 +15,7 @@ import Layout from "../layouts/Layout.astro";
         <div class="flex items-start justify-between gap-2">
           <div>
             <h1 id="kind" class="text-sm opacity-60"></h1>
-            <p id="amount" class="text-3xl font-bold"></p>
+            <p id="amount" class="font-display text-4xl font-bold"></p>
           </div>
           <span id="status" class="badge badge-lg"></span>
         </div>
@@ -32,11 +32,10 @@ import Layout from "../layouts/Layout.astro";
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow">
-      <div class="card-body">
-        <h2 class="card-title">Milestone'y</h2>
-        <ul id="tasks" class="list"></ul>
-      </div>
+    <!-- Milestone'y jako bilet: perforacja między etapami, pieczątka przy zaliczonych -->
+    <div class="card bg-base-100">
+      <h2 class="card-title px-6 pt-5 pb-4">Milestone'y</h2>
+      <div id="tasks"></div>
     </div>
 
     <!-- Wykonawca: link do wysłania zleceniodawcy (dopóki oferta nie jest przyjęta) -->
@@ -136,13 +135,18 @@ import Layout from "../layouts/Layout.astro";
     // Milestone'y: opis (tekst od wykonawcy — zawsze przez textContent), kwota i stan.
     $("#tasks").replaceChildren(
       ...escrow.tasks.map((task, index) => {
-        const row = document.createElement("li");
-        row.className = "list-row items-center";
+        const row = document.createElement("div");
+        row.className = "ticket-row flex items-center gap-4 px-6 py-4";
         const done = index < escrow!.approved;
         const next = index === escrow!.approved && funded && beforeDeadline;
-        row.innerHTML = `<span class="text-xl">${done ? "✓" : next ? "▶" : "○"}</span>
-          <div><div class="description"></div><div class="text-xs opacity-60">${sol(task.amount)}</div></div>
-          <span class="badge ${done ? "badge-success" : "badge-ghost"}">${done ? "zaliczony" : next ? "następny" : "oczekuje"}</span>`;
+        const state = done
+          ? `<span class="stamp">zaliczony</span>`
+          : next
+            ? `<span class="badge badge-primary badge-outline">następny</span>`
+            : `<span class="text-sm opacity-50">oczekuje</span>`;
+        row.innerHTML = `<span class="font-display w-4 text-lg font-bold opacity-30">${index + 1}</span>
+          <div class="min-w-0 flex-1"><p class="description font-medium break-words"></p><p class="text-sm opacity-60">${sol(task.amount)}</p></div>
+          ${state}`;
         row.querySelector(".description")!.textContent = task.description;
         return row;
       }),

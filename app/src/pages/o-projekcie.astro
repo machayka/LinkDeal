@@ -1,0 +1,137 @@
+---
+// „O projekcie”: film, prezentacja i opis działania na podstawie README — dla jury i ciekawskich.
+import Layout from "../layouts/Layout.astro";
+import { BOARD_URL, EXPLORER_PROGRAM_URL, GITHUB_URL, PRESENTATION_URL, PROGRAM_CODE_URL } from "../lib/config";
+
+// Krok w aplikacji → instrukcja programu → linia kodu, która go pilnuje.
+const steps = [
+  { action: "Wyślij ofertę", instruction: "create_escrow", line: 13, rule: "1–10 milestone'ów z kwotą większą od zera, oferta wygasa przed deadlinem" },
+  { action: "Przyjmij ofertę i zamroź", instruction: "fund", line: 41, rule: "oferta jest ważna i nieprzyjęta, cała kwota trafia na konto umowy" },
+  { action: "Zalicz milestone", instruction: "approve_milestone", line: 67, rule: "podpisuje zleceniodawca z umowy, przed deadlinem; kwota idzie do wykonawcy" },
+  { action: "Zwróć niewypłaconą kwotę", instruction: "refund_after_deadline", line: 102, rule: "deadline minął; reszta trafia tylko do zleceniodawcy" },
+  { action: "Anuluj ofertę", instruction: "cancel", line: 90, rule: "oferta wygasła i nikt jej nie przyjął; kaucja wraca do wykonawcy" },
+];
+
+const faq = [
+  { q: "Gdzie znika pośrednik?", a: "Pieniądze trzyma i wypłaca program on-chain, a nie platforma, która decyduje i bierze prowizję." },
+  { q: "Co, jeśli któraś strona zniknie?", a: "Wykonawca zachowuje to, co już dostał. Po deadlinie niewypłacona reszta wraca do zleceniodawcy." },
+  { q: "Kto ma jakie uprawnienia?", a: "Milestone'y zalicza tylko zleceniodawca. Pieniądze mogą trafić wyłącznie do stron umowy, autorzy aplikacji nie mają do nich dostępu." },
+  { q: "Dlaczego blockchain, a nie baza danych?", a: "Bazie trzeba ufać. Reguł programu nikt nie zmieni, a każdą transakcję widać publicznie w Solana Explorer." },
+];
+---
+
+<Layout title="O projekcie" wide>
+  <section class="py-8 md:py-12">
+    <h1 class="font-display max-w-3xl text-4xl leading-tight font-extrabold md:text-5xl">
+      Escrow dla freelancerów, w którym pieniędzy pilnuje kod, a nie pośrednik.
+    </h1>
+    <p class="mt-5 max-w-2xl text-lg opacity-80">
+      Freelancer i zleceniodawca, którzy się nie znają, nie muszą sobie ufać. Kwota zlecenia czeka zamrożona w programie
+      na Solanie i trafia do wykonawcy po zaliczeniu kolejnych milestone'ów. Projekt powstał na hackathon Superteam Poland
+      „Finance Without Intermediaries”.
+    </p>
+  </section>
+
+  <section class="grid gap-6 md:grid-cols-[1.6fr_1fr]">
+    <div class="card bg-base-100 overflow-hidden">
+      <video controls preload="metadata" poster="/media/linkdeal-demo.jpg" class="aspect-video w-full bg-neutral">
+        <source src="/media/linkdeal-demo.mp4" type="video/mp4" />
+      </video>
+    </div>
+    <div class="card bg-base-100">
+      <div class="card-body justify-between gap-6">
+        <div>
+          <h2 class="card-title text-2xl">Materiały</h2>
+          <p class="mt-2 opacity-70">Film z demo, prezentacja z hackathonu i cały kod w otwartym repozytorium.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <a href={PRESENTATION_URL} target="_blank" class="btn btn-primary">Otwórz prezentację (PDF)</a>
+          <a href={GITHUB_URL} target="_blank" class="btn">Kod na GitHubie</a>
+          <a href={EXPLORER_PROGRAM_URL} target="_blank" class="btn btn-ghost">Program w Solana Explorer</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="text-3xl">Jak to działa</h2>
+    <ol class="mt-6 grid gap-6 md:grid-cols-3">
+      <li>
+        <p class="font-display text-5xl font-extrabold text-primary">1</p>
+        <p class="mt-2 font-semibold">Wykonawca wysyła ofertę</p>
+        <p class="opacity-70">Dzieli zlecenie na milestone'y z kwotami, ustawia deadline i wysyła link zleceniodawcy.</p>
+      </li>
+      <li>
+        <p class="font-display text-5xl font-extrabold text-primary">2</p>
+        <p class="mt-2 font-semibold">Zleceniodawca zamraża kwotę</p>
+        <p class="opacity-70">Przyjmuje ofertę, a cała kwota trafia na konto umowy w programie. Nikt nie wypłaci jej sam dla siebie.</p>
+      </li>
+      <li>
+        <p class="font-display text-5xl font-extrabold text-primary">3</p>
+        <p class="mt-2 font-semibold">Program wypłaca etapami</p>
+        <p class="opacity-70">Każdy zaliczony milestone to natychmiastowa wypłata. Po deadlinie niezaliczona reszta wraca do zleceniodawcy.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="text-3xl">Co pilnuje program</h2>
+    <p class="mt-2 max-w-2xl opacity-70">
+      Każdy przycisk w aplikacji to jedna instrukcja programu on-chain. Link prowadzi do linii kodu, która sprawdza
+      warunki.
+    </p>
+    <div class="card bg-base-100 mt-6 overflow-x-auto">
+      <table class="table">
+        <thead>
+          <tr><th>W aplikacji</th><th>Instrukcja</th><th>Program pilnuje, że</th></tr>
+        </thead>
+        <tbody>
+          {
+            steps.map((step) => (
+              <tr>
+                <td class="font-medium">{step.action}</td>
+                <td><a href={`${PROGRAM_CODE_URL}#L${step.line}`} target="_blank" class="link link-primary font-mono text-sm">{step.instruction}</a></td>
+                <td class="opacity-80">{step.rule}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-16">
+    <h2 class="text-3xl">Dwie części, jedna granica</h2>
+    <div class="mt-6 grid md:grid-cols-[1fr_auto_1fr]">
+      <div class="py-2 md:pr-8">
+        <p class="font-display text-xl font-bold">linkdeal.fun: umowy</p>
+        <p class="mt-2 opacity-70">
+          Program on-chain trzyma i wypłaca pieniądze. Strona to same statyczne pliki: czyta umowy prosto z blockchaina, a
+          transakcje podpisuje portfel użytkownika.
+        </p>
+      </div>
+      <div class="my-4 h-1 rounded-full bg-neutral md:my-0 md:h-auto md:w-1" aria-hidden="true"></div>
+      <div class="py-2 md:pl-8">
+        <p class="font-display text-xl font-bold">ogloszenia.linkdeal.fun: ogłoszenia</p>
+        <p class="mt-2 opacity-70">
+          Zwykły serwer z bazą: opis zlecenia i kontakt do autora. Nie dotyka pieniędzy. Nawet jeśli zniknie, każda umowa
+          działa dalej. <a href={BOARD_URL} class="link">Zobacz ogłoszenia</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-16 mb-8">
+    <h2 class="text-3xl">Pytania i odpowiedzi</h2>
+    <dl class="mt-6 grid gap-6 md:grid-cols-2">
+      {
+        faq.map((item) => (
+          <div>
+            <dt class="font-semibold">{item.q}</dt>
+            <dd class="mt-1 opacity-70">{item.a}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+</Layout>
