@@ -30,12 +30,12 @@ const appUrl = import.meta.env.PUBLIC_APP_URL;
     </main>
 
     <footer class="border-t border-base-300 bg-base-100">
-      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
-        <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. HackYeah Hackathon.</p>
-        <nav class="flex flex-wrap gap-x-5 gap-y-2">
+      <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <p><span class="font-display text-lg font-bold">LinkDeal</span> <span class="text-sm opacity-60">escrow dla freelancerów na Solanie</span></p>
+        <nav class="flex flex-wrap gap-x-6 gap-y-3 font-medium">
+          <a href={appUrl} target="_blank" class="link link-hover">Umowy ↗</a>
           <a href={`${appUrl}/o-projekcie`} target="_blank" class="link link-hover">O projekcie ↗</a>
-          <a href={`${appUrl}/media/linkdeal-prezentacja.pdf`} target="_blank" class="link link-hover">Prezentacja (PDF)</a>
-          <a href="https://github.com/machayka/LinkDeal" target="_blank" class="link link-hover">Kod na GitHubie</a>
+          <a href="https://github.com/machayka/LinkDeal" target="_blank" class="link link-hover">Kod na GitHubie ↗</a>
         </nav>
       </div>
     </footer>

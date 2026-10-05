@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import { BOARD_URL, EXPLORER_PROGRAM_URL, GITHUB_URL, PRESENTATION_URL } from "../lib/config";
+import { BOARD_URL, GITHUB_URL } from "../lib/config";
 
 const { title, wide = false } = Astro.props; // wide: szersza kolumna (strona główna)
 ---
@@ -32,15 +32,13 @@ const { title, wide = false } = Astro.props; // wide: szersza kolumna (strona g�
     </main>
 
     <footer class="border-t border-base-300 bg-base-100">
-      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm">
-        <p class="opacity-70">LinkDeal: escrow dla freelancerów na Solanie. HackYeah Hackathon.</p>
-        <nav class="flex flex-wrap gap-x-5 gap-y-2">
+      <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <p><span class="font-display text-lg font-bold">LinkDeal</span> <span class="text-sm opacity-60">escrow dla freelancerów na Solanie</span></p>
+        <nav class="flex flex-wrap gap-x-6 gap-y-3 font-medium">
           <a href="/o-projekcie" class="link link-hover">O projekcie</a>
           <a href="/dla-kogo" class="link link-hover">Dla kogo</a>
           <a href={BOARD_URL} target="_blank" class="link link-hover">Ogłoszenia ↗</a>
-          <a href={PRESENTATION_URL} target="_blank" class="link link-hover">Prezentacja (PDF)</a>
-          <a href={GITHUB_URL} target="_blank" class="link link-hover">Kod na GitHubie</a>
-          <a href={EXPLORER_PROGRAM_URL} target="_blank" class="link link-hover">Program w Solana Explorer</a>
+          <a href={GITHUB_URL} target="_blank" class="link link-hover">Kod na GitHubie ↗</a>
         </nav>
       </div>
     </footer>
