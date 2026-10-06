@@ -1,5 +1,7 @@
+# http:// — certyfikaty i HTTPS obsługuje Cloudflare Tunnel, Caddy dostaje zwykłe HTTP.
+
 # Aplikacja umów: same statyczne pliki, bez serwera aplikacji.
-linkdeal.fun {
+http://linkdeal.fun {
 	root * /srv/app
 	# /contract/<adres> → jedna strona umowy, która czyta adres z URL-a
 	rewrite /contract/* /contract/index.html
@@ -7,11 +9,11 @@ linkdeal.fun {
 	file_server
 }
 
-www.linkdeal.fun {
+http://www.linkdeal.fun {
 	redir https://linkdeal.fun{uri} permanent
 }
 
 # Ogłoszenia: aplikacja Node z bazą (kontener board).
-ogloszenia.linkdeal.fun {
+http://ogloszenia.linkdeal.fun {
 	reverse_proxy board:4321
 }

@@ -1,13 +1,14 @@
 # Serwer: docker compose up -d --build (w katalogu deploy/, z plikiem .env obok — wzór w .env.example)
 services:
-  # HTTPS (certyfikaty automatycznie) + statyczna aplikacja umów + proxy do ogłoszeń
+  # Statyczna aplikacja umów + proxy do ogłoszeń. HTTPS robi Cloudflare Tunnel (cloudflared na serwerze),
+  # który łączy się tu przez localhost — z zewnątrz port nie jest dostępny.
   caddy:
     build:
       context: ..
       dockerfile: deploy/caddy.Dockerfile
       args:
         PUBLIC_RPC_URL: ${PUBLIC_RPC_URL}
-    ports: ["80:80", "443:443", "443:443/udp"]
+    ports: ["127.0.0.1:80:80"]
     volumes: [caddy_data:/data, caddy_config:/config]
     restart: unless-stopped
 
